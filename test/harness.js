@@ -13,8 +13,11 @@ const os = require("os");
 const path = require("path");
 
 class GameClient {
-  constructor(gamePort) {
+  // `localAddress`: another loopback address to come from (127.0.0.2), for
+  // what the server tells apart by address.
+  constructor(gamePort, localAddress = undefined) {
     this.gamePort = gamePort;
+    this.localAddress = localAddress;
     this.queue = [];
     this.varUpdates = [];
     this.askedForGames = 0;
@@ -25,7 +28,7 @@ class GameClient {
 
   connect() {
     return new Promise((resolve, reject) => {
-      this.socket = net.connect(this.gamePort, "127.0.0.1", resolve);
+      this.socket = net.connect({port: this.gamePort, host: "127.0.0.1", localAddress: this.localAddress}, resolve);
       this.socket.once("error", reject);
       this.socket.on("data", chunk => {
         this.buffer = Buffer.concat([this.buffer, chunk]);

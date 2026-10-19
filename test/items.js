@@ -8,6 +8,7 @@
 const assert = require("assert");
 const crypto = require("crypto");
 const fs = require("fs");
+const http = require("http");
 const os = require("os");
 const path = require("path");
 const zlib = require("zlib");
@@ -119,6 +120,34 @@ const untilDefs = async (client, kind) => {
     }
   }
 };
+// a game on another address: it fetches the packs with custom items in, and
+// at login is sent of them only what they may lack (customItems.sendAll),
+// all of it before the chat filter settings ("xfl").
+const ELSEWHERE = "127.0.0.2";
+const packsFrom = address => Promise.all([1000, 1030, 10230].map(id => new Promise((resolve, reject) => {
+  http.get(`${BASE}/${cdn.hashedPath(`defPacks/${id}`)}`, {localAddress: address}, res => {
+    assert.strictEqual(res.statusCode, 200);
+    res.resume();
+    res.on("end", resolve);
+  }).on("error", reject);
+})));
+const defsAtLogin = async (username, password, address) => {
+  const auth = await (await postJson(`${BASE}/authenticate`, {username, password})).json();
+  const client = new harness.GameClient(GAME_PORT, address);
+  await client.connect();
+  assert.strictEqual((await client.logIn(username, auth.auth_token)).status, "1");
+  const defs = {clothing: [], den: []};
+  for (;;) {
+    const fields = (await client.next()).split("%").slice(2, -1);
+    if (fields[0] === "xfl") {
+      client.socket.destroy();
+      return defs;
+    }
+    if (fields[0] === "xdi") {
+      defs[fields[2]].push(...JSON.parse(fields[3]));
+    }
+  }
+};
 const nextBox = async client => (await client.untilXt("xtl"))[2];
 const shopList = async (client, roomId, shop) => {
   client.xt("gl", roomId, shop);
@@ -194,6 +223,7 @@ const first = async () => {
   const crownRow = byId(await pack(1000), 50000);
   assert.strictEqual(crownRow.layerDefId, base.layerDefId);
   assert.strictEqual(crownRow.avatarUseFlags, "9007199254740991"); // any animal, like all clothing here
+  assert.strictEqual(row.avatarUseFlags, crownRow.avatarUseFlags); // and so in what games playing are sent
   assert.strictEqual((await strings())[9100000], "Test Crown");
 
   // first in the shop of oddities, and Pat can buy it in a colour it has
@@ -235,6 +265,20 @@ const first = async () => {
   say(devGame.client, devGame.roomId, `!item clothing ${base.id} Quick Hat`);
   assert.strictEqual(await nextBox(devGame.client), "Made Quick Hat, clothing 50001. It is in the item finder now.");
   assert.strictEqual((await untilDefs(pat.client, "clothing"))[0].name, "Quick Hat");
+  // a game whose address fetched the packs since has every item from them,
+  // and is sent none again; then only the one changed after
+  await packsFrom(ELSEWHERE);
+  assert.deepStrictEqual(await defsAtLogin("Lou", people.Lou, ELSEWHERE), {clothing: [], den: []});
+  assert.match((await dev("/mod/api/items", {action: "update", kind: "clothing", id: 50000, cost: 7})).data.ok, /changed/);
+  assert.strictEqual((await untilDefs(pat.client, "clothing"))[0].value, "7");
+  const changedSince = await defsAtLogin("Lou", people.Lou, ELSEWHERE);
+  assert.deepStrictEqual(changedSince.clothing.map(row => `${row.id} ${row.name} ${row.value}`), ["50000 Gold Crown 7"]);
+  assert.deepStrictEqual(changedSince.den, []);
+  // a row carries what the client reads of it, not the whole base row
+  const wire = ["id", "layerDefId", "layerId", "type", "value", "titleStrId", "isGiftable", "membersOnly", "itemStatus", "enviroType",
+    "avatarUseFlags", "recycleValue", "currencyType", "defense", "attack", "attackMediaRefId", "combatType", "modifierType",
+    "modifierValue", "criticalHit", "combinedCost", "colors", "availabilityStartTime", "availabilityEndTime", "name", "art", "artMode"];
+  assert.deepStrictEqual(Object.keys(changedSince.clothing[0]).filter(field => !wire.includes(field)), []);
   say(devGame.client, devGame.roomId, "!item list");
   assert.match(await nextBox(devGame.client), /^Latest items made: 50001 Quick Hat \(clothing\); 50000 Test Chair \(den\); 50000 Gold Crown \(clothing, off sale\)$/);
   say(devGame.client, devGame.roomId, "!item hat 12 x");
@@ -385,6 +429,10 @@ const first = async () => {
   const withArt = (await maker("info")).mine.find(sameItem);
   assert.match(withArt.art, /^p[0-9a-f]{12}$/);
   assert.deepStrictEqual(told, [[String(hatEntry.id), withArt.art]]);
+  // the packs have no pictures: a game logging in is sent each one, however new its packs
+  await packsFrom(ELSEWHERE);
+  const pictured = (await defsAtLogin("Lou", people.Lou, ELSEWHERE)).clothing;
+  assert.deepStrictEqual(pictured.filter(row => row.art).map(row => [row.id, row.art]), [[String(hatEntry.id), withArt.art]]);
   const served = await fetch(`${BASE}/itemart/clothing/${hatEntry.id}.png?v=${withArt.art}`);
   assert.deepStrictEqual([served.status, served.headers.get("content-type"), served.headers.get("x-content-type-options")], [200, "image/png", "nosniff"]);
   const bytes = Buffer.from(await served.arrayBuffer());
