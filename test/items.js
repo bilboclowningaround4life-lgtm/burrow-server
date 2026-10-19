@@ -632,11 +632,34 @@ const second = async () => {
   lou.client.socket.destroy();
 };
 
+// the packs made again at most every AJ_PACK_REMAKE_MS after a change: one
+// fetched before then is the one made before, and a game whose address
+// fetched it is sent at login the item it lacks.
+const REMAKE_MS = 5000;
+const third = async () => {
+  const fetchedEarlier = "127.0.0.3";
+  await packsFrom(fetchedEarlier);
+  const lou = await arrive("Lou", people.Lou);
+  lou.client.xt("xcm", lou.roomId, "make", "clothing", made.base.id, "Lou Hat");
+  const answer = await lou.client.untilXt("xcm");
+  assert.strictEqual(answer[2], "1", answer[3]);
+  const louHat = JSON.parse(answer[6]).find(entry => entry.name === "Lou Hat");
+  assert.ok(!byId(await pack(1000), louHat.id)); // the pack of before, for a moment
+  const atLogin = await defsAtLogin("Pat", people.Pat, fetchedEarlier);
+  assert.deepStrictEqual(atLogin.clothing.filter(row => row.id === String(louHat.id)).map(row => row.name), ["Lou Hat"]);
+  await new Promise(resolve => setTimeout(resolve, REMAKE_MS + 200));
+  assert.strictEqual(byId(await pack(1000), louHat.id).titleStrId, String(9100000 + louHat.id - 50000));
+  assert.strictEqual((await strings())[9100000 + louHat.id - 50000], "Lou Hat");
+  lou.client.socket.destroy();
+};
+
 (async () => {
   const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "aj-test-"));
   try {
     await harness.withServer("items test", HTTP_PORT, GAME_PORT, first, {dataDir});
     await harness.withServer("items test (after a restart)", HTTP_PORT, GAME_PORT, second, {dataDir});
+    process.env.AJ_PACK_REMAKE_MS = String(REMAKE_MS);
+    await harness.withServer("items test (packs made again at most so often)", HTTP_PORT, GAME_PORT, third, {dataDir});
   }
   finally {
     fs.rmSync(dataDir, {recursive: true, force: true, maxRetries: 10, retryDelay: 200});

@@ -327,6 +327,9 @@ module.exports = {
   cacheMissesPerTenMinutes: 1500, // a first visit with an empty cache fetches several hundred files
   upstreamTimeoutMs: 20000,
   maxCacheBytes: Number(env.AJ_MAX_CACHE_MB || 8192) * 1024 * 1024,
+  // how often at most the packs with custom items in are made again after
+  // one changes (lib/defpacks.js clientPack); the tests use 0, made at once.
+  packRemakeMs: env.AJ_PACK_REMAKE_MS === undefined ? 15000 : Number(env.AJ_PACK_REMAKE_MS),
   maxConnections: 2000,
   maxHttpConnections: 2000, // open at once, in all
   maxHttpConnectionsPerAddress: 40, // the game opens a good many at once while it loads

@@ -166,7 +166,9 @@ const withServer = async (name, httpPort, gamePort, run, {dataDir: keptDir = nul
       // everyone arrives in the township, as the tests expect
       AJ_SPAWN_ROOMS: process.env.AJ_SPAWN_ROOMS || "jamaa_township.room_main",
       // and in the one world
-      AJ_WORLDS: process.env.AJ_WORLDS || "1"},
+      AJ_WORLDS: process.env.AJ_WORLDS || "1",
+      // the packs made again at once after a custom item changes
+      AJ_PACK_REMAKE_MS: process.env.AJ_PACK_REMAKE_MS || "0"},
     stdio: ["ignore", "pipe", "inherit"],
   });
   let output = "";
