@@ -330,6 +330,11 @@ module.exports = {
   // how often at most the packs with custom items in are made again after
   // one changes (lib/defpacks.js clientPack); the tests use 0, made at once.
   packRemakeMs: env.AJ_PACK_REMAKE_MS === undefined ? 15000 : Number(env.AJ_PACK_REMAKE_MS),
+  // masterpieces (lib/masterpieces.js): seconds an account must have had
+  // before it paints one (AJ_MASTERPIECE_MIN_AGE; the tests use 0), and new
+  // pictures an account may post in any 24 hours.
+  masterpieceMinAccountAge: env.AJ_MASTERPIECE_MIN_AGE === undefined ? 86400 : Number(env.AJ_MASTERPIECE_MIN_AGE),
+  masterpiecesPerDay: 10,
   maxConnections: 2000,
   maxHttpConnections: 2000, // open at once, in all
   maxHttpConnectionsPerAddress: 40, // the game opens a good many at once while it loads

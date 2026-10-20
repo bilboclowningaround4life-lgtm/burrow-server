@@ -168,7 +168,8 @@ const withServer = async (name, httpPort, gamePort, run, {dataDir: keptDir = nul
       // and in the one world
       AJ_WORLDS: process.env.AJ_WORLDS || "1",
       // the packs made again at once after a custom item changes
-      AJ_PACK_REMAKE_MS: process.env.AJ_PACK_REMAKE_MS || "0"},
+      AJ_PACK_REMAKE_MS: process.env.AJ_PACK_REMAKE_MS || "0",
+      AJ_MASTERPIECE_MIN_AGE: process.env.AJ_MASTERPIECE_MIN_AGE || "0"},
     stdio: ["ignore", "pipe", "inherit"],
   });
   let output = "";
