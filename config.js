@@ -155,7 +155,7 @@ module.exports = {
   // 49 and 50: its link to a colour picker.
   // 61: the Owner, Moderator and Verified name tag badges seen by everyone.
   // 62: "Custom pictures" in the settings menu, to hide players' item pictures.
-  buildVersion: env.AJ_BUILD_VERSION || "71",
+  buildVersion: env.AJ_BUILD_VERSION || "78",
   // what the official CDN is asked for; not ours to change.
   upstreamBuildVersion: "3",
 
@@ -327,6 +327,14 @@ module.exports = {
   cacheMissesPerTenMinutes: 1500, // a first visit with an empty cache fetches several hundred files
   upstreamTimeoutMs: 20000,
   maxCacheBytes: Number(env.AJ_MAX_CACHE_MB || 8192) * 1024 * 1024,
+  // how often at most the packs with custom items in are made again after
+  // one changes (lib/defpacks.js clientPack); the tests use 0, made at once.
+  packRemakeMs: env.AJ_PACK_REMAKE_MS === undefined ? 15000 : Number(env.AJ_PACK_REMAKE_MS),
+  // masterpieces (lib/masterpieces.js): seconds an account must have had
+  // before it paints one (AJ_MASTERPIECE_MIN_AGE; the tests use 0), and new
+  // pictures an account may post in any 24 hours.
+  masterpieceMinAccountAge: env.AJ_MASTERPIECE_MIN_AGE === undefined ? 86400 : Number(env.AJ_MASTERPIECE_MIN_AGE),
+  masterpiecesPerDay: 10,
   maxConnections: 2000,
   maxHttpConnections: 2000, // open at once, in all
   maxHttpConnectionsPerAddress: 40, // the game opens a good many at once while it loads

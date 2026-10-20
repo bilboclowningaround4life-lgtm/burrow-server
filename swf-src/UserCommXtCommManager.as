@@ -725,7 +725,7 @@ package avatar
             {
                if(AvatarManager.avatarViewList[_loc19_])
                {
-                  AvatarManager.avatarViewList[_loc19_].setPetPlayerMode(_loc2_ == "on");
+                  AvatarManager.avatarViewList[_loc19_].setPetPlayerMode(param1[3] == "on");
                }
             }
             else

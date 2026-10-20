@@ -700,19 +700,6 @@ package gui
       {
          var _loc2_:WorldPet = null;
          param1.stopPropagation();
-         // Outside a play-as-your-pet event this button is the personal
-         // pet-form switch.  The server echoes the change to everybody in
-         // the room, so this is not merely a local visual effect.
-         if(!GuiManager.isBeYourPetRoom())
-         {
-            if(AvatarManager.playerAvatarWorldView && AvatarManager.playerAvatarWorldView.getActivePet())
-            {
-               UserCommXtCommManager.sendPetPlayerMode(!GuiManager.isPlayingAsPet());
-            }
-            actionBtn.dispatchEvent(new MouseEvent("mouseDown"));
-            param1.currentTarget.downToUpState();
-            return;
-         }
          if(AvatarManager.playerAvatarWorldView)
          {
             _loc2_ = AvatarManager.playerAvatarWorldView.getActivePet();

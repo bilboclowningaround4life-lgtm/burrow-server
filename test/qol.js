@@ -180,6 +180,9 @@ const run = async () => {
   const made = await a.untilXt("pc");
   assert.strictEqual(made[2], "1");
   assert.ok(Number(made[10]) <= Date.now() / 1000 - 259200);
+  // ... and named from the hatched popup (EggPetHatchedPopup waits for this answer)
+  a.xt("pn", roomId, made[5], 15386, 15428);
+  assert.deepStrictEqual((await a.untilXt("pn")).slice(2), ["1", made[5], "15386|15428"]);
 
   // --- she starts in the township as ever, in a look picked at random if she asked for one
   say(a, roomId, "!theme random on");

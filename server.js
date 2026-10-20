@@ -12,6 +12,7 @@ const modlog = require("./lib/modlog.js");
 const retention = require("./lib/retention.js");
 const colours = require("./lib/colours.js");
 const customItems = require("./lib/customitems.js");
+const customMusic = require("./lib/custommusic.js");
 const config = require("./config.js");
 const defpacks = require("./lib/defpacks.js");
 const http = require("./lib/http.js");
@@ -41,6 +42,7 @@ const main = async () => {
   accounts.startBackups();
   colours.load();
   customItems.load();
+  customMusic.load();
   reports.load();
   support.load();
   bans.load();

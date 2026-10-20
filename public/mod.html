@@ -475,9 +475,11 @@
           <button role="tab" data-tab="masterpieces" data-needs="player.view" aria-selected="false"><span class="icon" aria-hidden="true">&#9635;</span>Masterpieces<span id="masterpiece-count"></span></button>
           <button role="tab" data-tab="bans" data-needs="player.view" aria-selected="false"><span class="icon" aria-hidden="true">&#8856;</span>Bans</button>
           <button role="tab" data-tab="stats" data-needs="player.view" aria-selected="false"><span class="icon" aria-hidden="true">&#9636;</span>Stats</button>
+          <button role="tab" data-tab="mod-log" data-needs="staff.log" aria-selected="false" hidden><span class="icon" aria-hidden="true">&#9776;</span>Mod log</button>
           <button role="tab" data-tab="review" data-needs="items.approve" aria-selected="false" hidden><span class="icon" aria-hidden="true">&#10004;</span>Review</button>
           <button role="tab" data-tab="wear-rules" data-needs="items.restrict" aria-selected="false" hidden><span class="icon" aria-hidden="true">&#9873;</span>Wear rules</button>
           <button role="tab" data-tab="items" data-needs="items.create" aria-selected="false" hidden><span class="icon" aria-hidden="true">&#10070;</span>Items</button>
+          <button role="tab" data-tab="music" data-needs="music.upload" aria-selected="false" hidden><span class="icon" aria-hidden="true">&#9835;</span>Music</button>
         </nav>
         <button id="sign-out" type="button">Sign out</button>
       </aside>
@@ -897,6 +899,31 @@
         </section>
       </div>
 
+      <div data-view="music" hidden>
+        <section>
+          <h2>Upload music</h2>
+          <p class="hint">An MP3 becomes a den music track at once, with no restart: players get it from the item finder (and the shop, if it is on sale) and play it in their dens like the game's own tracks. 44.1 kHz MP3s play best; 15 MB at most.</p>
+          <div class="actions">
+            <div class="action">
+              <h3>The track</h3>
+              <div class="row"><input id="music-file" type="file" accept=".mp3,audio/mpeg" aria-label="MP3 file"></div>
+              <div class="row" style="margin-top:8px"><input id="music-name" maxlength="40" placeholder="Name" aria-label="Name"></div>
+              <div class="row" style="margin-top:8px"><input id="music-cost" type="number" min="0" placeholder="Price in gems (0)" aria-label="Price in gems">
+                <label class="check"><input type="checkbox" id="music-shop"> On sale in the shop</label></div>
+              <div class="row" style="margin-top:8px"><button type="button" class="primary" id="music-upload">Upload</button></div>
+            </div>
+          </div>
+          <p class="status" id="music-status" role="status"></p>
+        </section>
+        <section>
+          <h2>Uploaded tracks</h2>
+          <div class="table-wrap"><table>
+            <thead><tr><th>Track</th><th class="num">Den item</th><th>Uploaded</th><th class="num">Size</th><th></th></tr></thead>
+            <tbody id="music-list"></tbody>
+          </table></div>
+          <div class="empty" id="no-music" hidden>None yet.</div>
+        </section>
+      </div>
       <div data-view="items" hidden>
         <section>
           <h2 id="item-form-title">Make an item</h2>
@@ -963,6 +990,17 @@
             </div>
           </div>
           <p class="status" id="control-status" role="status"></p>
+        </section>
+      </div>
+
+      <div data-view="mod-log" hidden>
+        <section>
+          <h2>What staff did</h2>
+          <div class="table-wrap"><table>
+            <thead><tr><th>When</th><th>Who</th><th>What</th><th>Player</th><th>Detail</th></tr></thead>
+            <tbody id="mod-log"></tbody>
+          </table></div>
+          <div class="empty" id="no-mod-log" hidden>Nothing yet.</div>
         </section>
       </div>
 
@@ -2733,6 +2771,91 @@
         $("server-updated").textContent = `Updated ${new Date(Number(data.now || Date.now())).toLocaleTimeString()}.`;
       };
 
+      // ---- music uploaded by staff (lib/custommusic.js): an MP3 made a den
+      // music track, which players get from the item finder at once
+      const MUSIC = "/mod/api/music";
+      let musicShown = "";
+      const musicCall = async (query, body) => {
+        try {
+          const response = await fetch(`${MUSIC}${query}`, {method: "POST", headers: {"Content-Type": "audio/mpeg"}, body});
+          return await response.json().catch(() => ({error: "That did not work."}));
+        }
+        catch (err) {
+          return {error: "The server did not answer."};
+        }
+      };
+      const renderMusic = data => {
+        const tracks = data.tracks || [];
+        // drawn again only when something changed: a track being listened to keeps playing
+        const shown = JSON.stringify(tracks);
+        if (shown === musicShown) {
+          return;
+        }
+        musicShown = shown;
+        $("no-music").hidden = tracks.length > 0;
+        $("music-list").replaceChildren(...tracks.map(track => {
+          const row = el("tr");
+          const name = el("td");
+          const player = el("audio");
+          player.controls = true;
+          player.preload = "none";
+          player.src = `${MUSIC}?play=${track.id}`;
+          player.style.cssText = "display:block;margin-top:6px;height:32px;max-width:260px";
+          name.append(el("strong", track.name), player);
+          const actions = el("td");
+          actions.append(button("Delete", async () => {
+            if (!confirm(`Delete "${track.name}"? It is taken from every player who has it. This cannot be undone.`)) {
+              return;
+            }
+            const result = await musicCall(`?delete=${track.id}`, new Uint8Array(0));
+            setStatus($("music-status"), result.ok || result.error || "That did not work.", !result.ok);
+            await loadMusic();
+          }, "danger"));
+          row.append(name, el("td", String(track.id), "num"), el("td", `${when(track.createdAt)} · ${track.createdBy}${track.inShop ? ` · on sale, ${track.cost} gems` : ""}`),
+            el("td", `${(track.bytes / 1048576).toFixed(1)} MB`, "num"), actions);
+          return row;
+        }));
+      };
+      const loadMusic = async () => {
+        try {
+          const response = await fetch(MUSIC);
+          const data = await response.json().catch(() => ({}));
+          if (response.ok) {
+            renderMusic(data);
+          }
+        }
+        catch (err) {
+          // shown again with the next refresh
+        }
+      };
+      // the name from the file's, until one is typed
+      $("music-file").addEventListener("change", () => {
+        const file = $("music-file").files[0];
+        if (file && !$("music-name").value.trim()) {
+          $("music-name").value = file.name.replace(/\.mp3$/i, "").replace(/[_]+/g, " ").slice(0, 40);
+        }
+      });
+      $("music-upload").addEventListener("click", async () => {
+        const file = $("music-file").files[0];
+        if (!file || !$("music-name").value.trim()) {
+          setStatus($("music-status"), file ? "Give the track a name." : "Choose an MP3 first.", true);
+          return;
+        }
+        $("music-upload").disabled = true;
+        setStatus($("music-status"), "Uploading...");
+        const query = `?name=${encodeURIComponent($("music-name").value.trim())}&cost=${encodeURIComponent($("music-cost").value || 0)}&inShop=${$("music-shop").checked ? 1 : 0}`;
+        const result = await musicCall(query, new Uint8Array(await file.arrayBuffer()));
+        $("music-upload").disabled = false;
+        setStatus($("music-status"), result.ok || result.error || "That did not work.", !result.ok);
+        if (result.ok) {
+          for (const id of ["music-file", "music-name", "music-cost"]) {
+            $(id).value = "";
+          }
+          $("music-shop").checked = false;
+        }
+        await loadMusic();
+      });
+
       const refresh = async () => {
         clearTimeout(timer);
         if (!signedIn) {
@@ -2850,6 +2973,19 @@
         else if (shown === "stats") {
           await window.statsView.load(api);
         }
+        else if (shown === "mod-log") {
+          const result = await api("modlog");
+          if (result.ok) {
+            $("mod-log").replaceChildren(...result.data.log.map(entry => {
+              const row = el("tr");
+              const detail = el("td", entry.detail);
+              detail.style.whiteSpace = "normal";
+              row.append(el("td", when(entry.at)), el("td", entry.by), el("td", entry.action), el("td", entry.target || "—"), detail);
+              return row;
+            }));
+            $("no-mod-log").hidden = result.data.log.length > 0;
+          }
+        }
         else if (shown === "bans") {
           const [result, hits] = await Promise.all([api("bans"), api("filterhits")]);
           if (result.ok) {
@@ -2867,6 +3003,9 @@
         }
         else if (shown === "wear-rules") {
           await loadWearRules();
+        }
+        else if (shown === "music") {
+          await loadMusic();
         }
         else if (shown === "items") {
           const result = await api("items");

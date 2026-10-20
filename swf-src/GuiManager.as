@@ -181,10 +181,6 @@ package gui
       
       private static var _petInventory:PetInventory;
 
-      // A player's voluntary pet form.  Party and quest pet forms remain
-      // room-wide and are still reported by isBeYourPetRoom().
-      private static var _personalPetMode:Boolean = false;
-      
       private static var _joeyPopup:MovieClip;
       
       private static var _secondaryJoeyPopup:MovieClip;
@@ -2616,7 +2612,7 @@ package gui
          {
             mainHud.charWindow.charLayer.removeChildAt(0);
          }
-         if(isBeYourPetRoom())
+         if(isPlayingAsPet())
          {
             _loc1_ = PetManager.myActivePet;
             if(_loc1_)
@@ -2911,18 +2907,16 @@ package gui
          return QuestManager.isBeYourPetQuest() || PartyManager.isBeYourPetParty();
       }
 
+      // A player's own pet form: the party's and the quest's for everyone in
+      // the room, or the pet chooser's switch with a pet out.
       public static function isPlayingAsPet() : Boolean
       {
-         return _personalPetMode || isBeYourPetRoom();
+         return isBeYourPetRoom() || AJClient.petFormOn() && PetManager.myActivePet != null;
       }
 
+      // the player's own avatar came into or out of its pet form
       public static function setPersonalPetMode(param1:Boolean) : void
       {
-         if(_personalPetMode == param1)
-         {
-            return;
-         }
-         _personalPetMode = param1;
          if(mainHud)
          {
             showHudAvt();
