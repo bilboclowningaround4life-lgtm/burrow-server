@@ -60,6 +60,7 @@ set -- \
   gui.RecycleItems RecycleItems.as \
   gui.AvatarEditor AvatarEditor.as \
   gui.PetInventory PetInventory.as \
+  pet.WorldPet WorldPet.as \
   gui.DenEditor DenEditor.as \
   gui.TradeManager TradeManager.as \
   avatar.AvatarView AvatarView.as \

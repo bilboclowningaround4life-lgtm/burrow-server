@@ -608,6 +608,14 @@ package
          return settingOf(9006) != 1;
       }
 
+      // the pet chooser's "play as your pet" switch (gui.PetInventory): the
+      // pet that is out stands in for the avatar in any room. user var 9008,
+      // which the server also reads to show the pet form to everyone.
+      public static function petFormOn() : Boolean
+      {
+         return settingOf(9008) == 1;
+      }
+
       // an item's picture version, or null for none or with them hidden
       private static function artOf(param1:String, param2:int) : String
       {
@@ -1542,6 +1550,7 @@ package
       //   9007  Performance profile: 1 Low-end, 2 High, unset Balanced. A
       //         profile changes only optional rendering work, never the
       //         game's native 24 FPS (which would slow its animations).
+      //   9008  Play as your pet (gui.PetInventory, lib/pets.js): 1 on.
       
       
       private static var _smoothTimer:Timer;

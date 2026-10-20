@@ -335,6 +335,12 @@ package avatar
       private var _currPetName:String;
       
       private var _shouldShowPetOnly:Boolean;
+
+      // the pet chooser's switch as last heard for this avatar (type-13 user
+      // communication), and the pet last set, to make it again in either form
+      private var _petPlayerMode:Boolean;
+
+      private var _petArgs:Array;
       
       private var _emitParticles:Boolean;
       
@@ -552,7 +558,7 @@ package avatar
             _loc12_ = 1;
          }
          _chatBalloon = GETDEFINITIONBYNAME("ChatBalloonAsset",false);
-         _chatBalloon.init(_avatar.avTypeId,AvatarUtility.getAvatarEmoteBgOffset,false,_loc12_,RoomManagerWorld.instance.layerManager.bkg.scaleX,SBTextField,onChatBallonAdventureDown,onChatBalloonPVPDown);
+         _chatBalloon.init(_avatar.avTypeId,emoteBgOffset,false,_loc12_,RoomManagerWorld.instance.layerManager.bkg.scaleX,SBTextField,onChatBallonAdventureDown,onChatBalloonPVPDown);
          _chatLayer.addChild(_chatBalloon);
          _moving = 0;
          _lastMoveAngle = 2;
@@ -605,7 +611,7 @@ package avatar
                _hudViewHolder.mouse.gotoAndStop(offScreenDefaultMouseFrameLabel());
             }
          }
-         _shouldShowPetOnly = GuiManager.isBeYourPetRoom() || userId == AvatarManager.playerSfsUserId && GuiManager.isPlayingAsPet();
+         _shouldShowPetOnly = GuiManager.isBeYourPetRoom() || (userId == AvatarManager.playerSfsUserId ? GuiManager.isPlayingAsPet() : _petPlayerMode);
          if(_shouldShowPetOnly)
          {
             _layerAnim.alpha = 0;
@@ -2066,6 +2072,7 @@ package avatar
       
       public function setActivePet(param1:Number, param2:uint, param3:uint, param4:uint, param5:String, param6:int, param7:int, param8:int, param9:int = 0) : void
       {
+         _petArgs = [param1,param2,param3,param4,param5,param6,param7,param8,param9];
          if(_pet)
          {
             if(_pet.parent == this)
@@ -2094,6 +2101,17 @@ package avatar
             {
                _splash.showShadow(true);
             }
+            // another pet out in the pet form: the HUD shows the new one
+            if(_shouldShowPetOnly && userId == AvatarManager.playerSfsUserId)
+            {
+               GuiManager.setPersonalPetMode(true);
+            }
+         }
+         // a pet that cannot come into this room leaves the avatar shown
+         if(_shouldShowPetOnly && !_pet && !GuiManager.isBeYourPetRoom())
+         {
+            _shouldShowPetOnly = false;
+            showPetForm();
          }
       }
 
@@ -2102,8 +2120,30 @@ package avatar
       // own state instead of asking the room-wide GuiManager predicate.
       public function setPetPlayerMode(param1:Boolean) : void
       {
-         var _loc2_:Boolean = param1 && _pet != null;
-         _shouldShowPetOnly = _loc2_ || GuiManager.isBeYourPetRoom();
+         var _loc2_:Boolean = false;
+         _petPlayerMode = param1;
+         _loc2_ = GuiManager.isBeYourPetRoom() || param1 && _petArgs != null && _petArgs[1] != 0;
+         if(_loc2_ != _shouldShowPetOnly)
+         {
+            _shouldShowPetOnly = _loc2_;
+            // WorldPet takes its size and place from the form when it is
+            // made, so the pet is made again
+            if(_petArgs != null)
+            {
+               setActivePet.apply(this,_petArgs);
+            }
+         }
+         showPetForm();
+         if(userId == AvatarManager.playerSfsUserId)
+         {
+            GuiManager.setPersonalPetMode(_shouldShowPetOnly);
+         }
+      }
+
+      // the avatar or its pet, as _shouldShowPetOnly says
+      private function showPetForm() : void
+      {
+         var _loc1_:UserInfo = null;
          _layerAnim.alpha = _shouldShowPetOnly ? 0 : 1;
          _layerAnim.avatarEnabled = !_shouldShowPetOnly;
          if(_shouldShowPetOnly && _pet)
@@ -2117,12 +2157,32 @@ package avatar
          else
          {
             _splash.showShadow(true);
-            _namebar.setAvName(_avatar.avName);
+            _loc1_ = gMainFrame.userInfo.getUserInfoByUserName(_avatar.userName);
+            _namebar.setAvName(_avatar,Utility.isSettingOn(MySettings.SETTINGS_USERNAME_BADGE),_loc1_);
          }
-         if(userId == AvatarManager.playerSfsUserId)
-         {
-            GuiManager.setPersonalPetMode(_loc2_);
-         }
+         placeChatBalloon();
+         updateChatBallonBgOffsets();
+      }
+
+      // the pet stands in for this avatar: the party's or quest's form, or
+      // the pet chooser's switch (WorldPet asks)
+      public function isPetForm() : Boolean
+      {
+         return _shouldShowPetOnly;
+      }
+
+      // chat balloons and emotes sit over the pet in its form, as the
+      // party's do (AvatarUtility's pet offsets)
+      private function placeChatBalloon() : void
+      {
+         var _loc1_:Point = _shouldShowPetOnly ? new Point(10,-80) : AvatarUtility.getAvatarChatOffset(_avatar.avTypeId);
+         _chatBalloon.x = this.x + _loc1_.x;
+         _chatBalloon.y = this.y + _loc1_.y;
+      }
+
+      private function emoteBgOffset(param1:int) : Point
+      {
+         return _shouldShowPetOnly ? new Point(-5,-25) : AvatarUtility.getAvatarEmoteBgOffset(param1);
       }
       
       public function getActivePet() : WorldPet
@@ -2281,9 +2341,7 @@ package avatar
          param2 *= _scale.y;
          this.x = param1;
          this.y = param2;
-         var _loc3_:Point = AvatarUtility.getAvatarChatOffset(_avatar.avTypeId);
-         _chatBalloon.x = this.x + _loc3_.x;
-         _chatBalloon.y = this.y + _loc3_.y;
+         placeChatBalloon();
          if(_avSwitchedNPC)
          {
             _avSwitchedNPC.x = param1;
@@ -2359,9 +2417,9 @@ package avatar
                {
                   _hudViewHolder.mouse.gotoAndStop(offScreenDefaultMouseFrameLabel());
                }
-               if(GuiManager.isBeYourPetRoom())
+               _loc7_ = gMainFrame.userInfo.getAvatarInfoByUsernamePerUserAvId(userName,perUserAvId);
+               if(_shouldShowPetOnly && _loc7_ && _loc7_.currPet)
                {
-                  _loc7_ = gMainFrame.userInfo.getAvatarInfoByUsernamePerUserAvId(userName,perUserAvId);
                   _hudAvtOrPetView = new GuiPet(_loc7_.currPet.createdTs,0,_loc7_.currPet.lBits,_loc7_.currPet.uBits,_loc7_.currPet.eBits,_loc7_.currPet.type,_loc7_.currPet.name,_loc7_.currPet.personalityDefId,_loc7_.currPet.favoriteToyDefId,_loc7_.currPet.favoriteFoodDefId,onHudAvtOrPetView);
                }
                else
@@ -2479,7 +2537,7 @@ package avatar
          var _loc3_:Number = NaN;
          if(_hudAvtOrPetView)
          {
-            if(GuiManager.isBeYourPetRoom())
+            if(_hudAvtOrPetView is GuiPet)
             {
                _hudAvtOrPetView.y = 15;
             }

@@ -3,6 +3,7 @@ package gui
    import Party.PartyManager;
    import adoptAPet.AdoptAPetManager;
    import avatar.AvatarManager;
+   import avatar.UserCommXtCommManager;
    import com.sbi.analytics.SBTracker;
    import com.sbi.popup.SBOkPopup;
    import com.sbi.popup.SBYesNoPopup;
@@ -43,6 +44,12 @@ package gui
       private var _inventoryMC:MovieClip;
       
       private var _loadingMediaHelper:MediaHelper;
+
+      // "play as your pet": the settings menu's on/off switch, in any room
+      // but a Play-As-Your-Pet party's (AJClient.petFormOn)
+      private var _petFormSwitch:MovieClip;
+
+      private var _petFormOn:Boolean;
       
       private var _loadingSpiralBig:LoadingSpiral;
       
@@ -222,6 +229,7 @@ package gui
             _guiLayer.addChild(_inventoryMC);
             DarkenManager.darken(_inventoryMC);
             createItemWindows();
+            addPetFormSwitch();
             addEventListeners();
             if(_openCheckListImmediately)
             {
@@ -246,6 +254,58 @@ package gui
       }
       
       // A double click on the big pet's name lets the player type another.
+      // the switch sits at the top left of the pet's picture, across from
+      // the certificate. on, whichever pet is out stands in for the avatar,
+      // for everyone (the server keeps it with the user vars and tells the
+      // room: UserCommXtCommManager type 13).
+      private function addPetFormSwitch() : void
+      {
+         var _loc1_:MovieClip = null;
+         if(GuiManager.isBeYourPetRoom())
+         {
+            return;
+         }
+         _loc1_ = GETDEFINITIONBYNAME("mySettingsToggle",false);
+         _petFormSwitch = _loc1_.toggleBtn;
+         _loc1_.removeChild(_petFormSwitch);
+         _petFormSwitch.x = 78;
+         _petFormSwitch.y = -143;
+         _petFormSwitch.buttonMode = true;
+         _petFormSwitch.useHandCursor = true;
+         _petFormSwitch.toggleBtn.toggleKnob.gotoAndStop("up");
+         _petFormSwitch.toggleBtn.toggleBG.gotoAndStop("up");
+         _petFormOn = AJClient.petFormOn();
+         _petFormSwitch.toggleBtn.gotoAndStop(_petFormOn ? "startingOn" : "startingOff");
+         LocalizationManager.translateId(_petFormSwitch.toggleBtn.valueTxt.onTxt,6324);
+         LocalizationManager.translateId(_petFormSwitch.toggleBtn.valueTxt.offTxt,6322);
+         _inventoryMC.addChild(_petFormSwitch);
+      }
+
+      private function onPetFormSwitch(param1:MouseEvent) : void
+      {
+         param1.stopPropagation();
+         _petFormOn = !_petFormOn;
+         _petFormSwitch.toggleBtn.gotoAndPlay(_petFormOn ? "on" : "off");
+         UserCommXtCommManager.sendPetPlayerMode(_petFormOn);
+      }
+
+      private function onPetFormSwitchOver(param1:MouseEvent) : void
+      {
+         param1.stopPropagation();
+         _petFormSwitch.toggleBtn.toggleBG.gotoAndStop("over");
+         _petFormSwitch.toggleBtn.toggleKnob.gotoAndStop("over");
+         GuiManager.toolTip.init(_petFormSwitch,"Play as your pet",58,-10);
+         GuiManager.toolTip.startTimer(param1);
+      }
+
+      private function onPetFormSwitchOut(param1:MouseEvent) : void
+      {
+         param1.stopPropagation();
+         _petFormSwitch.toggleBtn.toggleBG.gotoAndStop("up");
+         _petFormSwitch.toggleBtn.toggleKnob.gotoAndStop("up");
+         GuiManager.toolTip.resetTimerAndSetVisibility();
+      }
+      
       private function onPetRenamed(param1:String) : void
       {
          var _loc2_:int = 0;
@@ -852,6 +912,12 @@ package gui
          _inventoryMC.salonBtn.addEventListener("mouseDown",onSalonBtn,false,0,true);
          _inventoryMC.checklistBtn.addEventListener("mouseDown",onChecklistBtn,false,0,true);
          _inventoryMC.certBtn.addEventListener("mouseDown",onCertBtn,false,0,true);
+         if(_petFormSwitch)
+         {
+            _petFormSwitch.addEventListener("mouseDown",onPetFormSwitch,false,0,true);
+            _petFormSwitch.addEventListener("rollOver",onPetFormSwitchOver,false,0,true);
+            _petFormSwitch.addEventListener("rollOut",onPetFormSwitchOut,false,0,true);
+         }
       }
       
       private function removeEventListeners() : void
@@ -866,6 +932,14 @@ package gui
          _inventoryMC.salonBtn.removeEventListener("mouseDown",onSalonBtn);
          _inventoryMC.checklistBtn.removeEventListener("mouseDown",onChecklistBtn);
          _inventoryMC.certBtn.removeEventListener("mouseDown",onCertBtn);
+         if(_petFormSwitch)
+         {
+            _petFormSwitch.removeEventListener("mouseDown",onPetFormSwitch);
+            _petFormSwitch.removeEventListener("rollOver",onPetFormSwitchOver);
+            _petFormSwitch.removeEventListener("rollOut",onPetFormSwitchOut);
+            GuiManager.toolTip.resetTimerAndSetVisibility();
+            _petFormSwitch = null;
+         }
       }
    }
 }
