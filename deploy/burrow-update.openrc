@@ -1,0 +1,17 @@
+#!/sbin/openrc-run
+# Install as /etc/init.d/burrow-update (see deploy/README.md).
+
+description="Update the Burrow server from GitHub"
+supervisor=supervise-daemon
+command=/bin/bash
+command_args="${BURROW_DIR:-/home/aj/ajc-private-server}/deploy/update-loop.sh"
+pidfile="/run/${RC_SVCNAME}.pid"
+stopgroup=yes
+
+# update.sh uses this to choose rc-service when it restarts Burrow.
+: "${BURROW_INIT:=openrc}"
+export BURROW_INIT
+
+depend() {
+  need net
+}

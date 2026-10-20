@@ -1,14 +1,34 @@
 #!/usr/bin/env bash
-# brings the server to origin's main and restarts it when the change needs it.
-# run as root by burrow-update.timer; git itself runs as the server's user.
+# Brings the server to origin's main and restarts it when the change needs it.
+# Run as root by either burrow-update.timer or the OpenRC updater service; git
+# itself runs as the server's user.
 set -euo pipefail
 
 dir=${BURROW_DIR:-/home/aj/ajc-private-server}
 user=${BURROW_USER:-aj}
 service=${BURROW_SERVICE:-burrow}
 branch=${BURROW_BRANCH:-main}
+init=${BURROW_INIT:-}
 
 git() { runuser -u "$user" -- git -C "$dir" "$@"; }
+
+restart_service() {
+  case "$init" in
+    systemd) systemctl restart "$service" ;;
+    openrc) rc-service "$service" restart ;;
+    "")
+      if [ -d /run/openrc ] || [ -n "${RC_SVCNAME:-}" ]; then
+        rc-service "$service" restart
+      else
+        systemctl restart "$service"
+      fi
+      ;;
+    *)
+      echo "unknown BURROW_INIT value: $init (expected systemd or openrc)" >&2
+      return 2
+      ;;
+  esac
+}
 
 git fetch --quiet origin "$branch"
 old=$(git rev-parse HEAD)
@@ -33,7 +53,7 @@ done
 # pipefail read as nothing to restart for.
 changed=$(git diff --name-only "$old" "$new")
 if grep -qvE '^(public/|client-updates/|test/|tools/|deploy/|[^/]+\.md$|\.gitignore$)' <<<"$changed"; then
-  systemctl restart "$service"
+  restart_service
   echo "updated $old -> $new, restarted $service"
 else
   echo "updated $old -> $new, no restart needed"
