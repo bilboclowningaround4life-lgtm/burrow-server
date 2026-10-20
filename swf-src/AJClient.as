@@ -22,6 +22,7 @@ package
    import createAccountFlow.CreateAccount;
    import flash.display.Bitmap;
    import flash.display.BitmapData;
+   import flash.display.DisplayObjectContainer;
    import flash.display.Loader;
    import flash.display.MovieClip;
    import flash.display.Shape;
@@ -340,6 +341,181 @@ package
          gMainFrame.stage.addEventListener("keyDown",onFinderKey,false,1000);
          startEmojiButton();
          placeTheatreButton();
+         gMainFrame.stage.addEventListener("enterFrame",reportTheatreScreen,false,0,true);
+      }
+
+      // where the theatre's screen is, for game.html to lay a web video over
+      // it exactly: the original player's 512 by 288 at the top left of the
+      // theatre layer's videoLayer (movie.VideoPlayerOSMF), in stage
+      // coordinates (900 by 550; the page scales them as "showAll" does).
+      // "x,y,width,height", or "" with no theatre screen shown; told only
+      // when it changes, as the room zooms and scrolls under it.
+      //
+      // a web video is always drawn over the whole game, so it also gets
+      // where the game draws something over the screen (the HUD, the buddy
+      // list, a Jammer Wall, chat balloons): "x,y,width,height|columns|rows",
+      // a hex row of bits per SCREEN_CELL stage pixels, top to bottom, over
+      // the screen and SCREEN_BELOW pixels under it (the page's own button
+      // sits there). the page cuts those cells out of the video.
+      private static const THEATRE_SCREEN_W:Number = 512;
+      private static const THEATRE_SCREEN_H:Number = 288;
+      private static const SCREEN_CELL:Number = 4;
+      private static const SCREEN_BELOW:Number = 44;
+      private static const SCREEN_COVER_EVERY:int = 4; // frames between looks
+      private static const SCREEN_COVER_ALPHA:uint = 64; // of 255: drawn on, as far as the video goes
+      private static var _theatreScreenTold:String = null;
+      private static var _theatreCover:String = "";
+      private static var _theatreCoverFrame:int = 0;
+
+      private static function reportTheatreScreen(param1:Event = null) : void
+      {
+         var _loc2_:String = "";
+         var _loc3_:Object = null;
+         var _loc4_:DisplayObject = null;
+         var _loc5_:Point = null;
+         var _loc6_:Point = null;
+         try
+         {
+            _loc3_ = RoomManagerWorld.instance != null ? RoomManagerWorld.instance.theaterWindow : null;
+            _loc4_ = _loc3_ != null && _loc3_.hasOwnProperty("videoLayer") ? _loc3_.videoLayer as DisplayObject : null;
+            if(_loc4_ != null && shownOnStage(_loc4_))
+            {
+               _loc5_ = _loc4_.localToGlobal(new Point(0,0));
+               _loc6_ = _loc4_.localToGlobal(new Point(THEATRE_SCREEN_W,THEATRE_SCREEN_H));
+               _loc2_ = [_loc5_.x,_loc5_.y,_loc6_.x - _loc5_.x,_loc6_.y - _loc5_.y].map(function(param1:Number, ... rest):String
+               {
+                  return String(Math.round(param1 * 10) / 10);
+               }).join(",");
+               if(++_theatreCoverFrame >= SCREEN_COVER_EVERY || _theatreScreenTold == null || _theatreScreenTold.indexOf(_loc2_) != 0)
+               {
+                  _theatreCoverFrame = 0;
+                  _theatreCover = theatreCover(_loc3_ as DisplayObject,_loc5_.x,_loc5_.y,_loc6_.x - _loc5_.x,_loc6_.y - _loc5_.y);
+               }
+               if(_theatreCover != "")
+               {
+                  _loc2_ += "|" + _theatreCover;
+               }
+            }
+         }
+         catch(e:Error)
+         {
+            _loc2_ = "";
+         }
+         if(_loc2_ == _theatreScreenTold || !ExternalInterface.available)
+         {
+            return;
+         }
+         _theatreScreenTold = _loc2_;
+         try
+         {
+            ExternalInterface.call("ajTheatreScreen",_loc2_);
+         }
+         catch(e:Error)
+         {
+         }
+      }
+
+      // what is drawn over the theatre screen, as above: the game's windows
+      // and buttons, and the room's chat balloons, drawn small, cell by cell.
+      // the rest is hidden for the moment of drawing, in between two frames:
+      // the screen, what lies under it, and the room itself (its seats and
+      // floor are drawn above the screen, and are no reason for the video or
+      // its button to step aside). "" for nothing, or when the game will not
+      // be drawn.
+      private static function theatreCover(param1:DisplayObject, param2:Number, param3:Number, param4:Number, param5:Number) : String
+      {
+         var _loc6_:Array = [];
+         var _loc7_:DisplayObject = param1;
+         var _loc8_:DisplayObjectContainer = null;
+         var _loc9_:int = 0;
+         var _loc10_:DisplayObject = null;
+         var _loc11_:int = Math.max(1,Math.ceil(param4 / SCREEN_CELL));
+         var _loc12_:int = Math.max(1,Math.ceil((param5 + SCREEN_BELOW) / SCREEN_CELL));
+         var _loc13_:BitmapData = null;
+         var _loc14_:Array = [];
+         var _loc15_:Boolean = false;
+         var _loc16_:int = 0;
+         var _loc17_:int = 0;
+         var _loc18_:int = 0;
+         var _loc19_:String = null;
+         try
+         {
+            if(_loc7_.visible)
+            {
+               _loc7_.visible = false;
+               _loc6_.push(_loc7_);
+            }
+            while(_loc7_.parent != null)
+            {
+               _loc8_ = _loc7_.parent;
+               _loc9_ = _loc8_.getChildIndex(_loc7_);
+               while(--_loc9_ >= 0)
+               {
+                  _loc10_ = _loc8_.getChildAt(_loc9_);
+                  if(_loc10_.visible)
+                  {
+                     _loc10_.visible = false;
+                     _loc6_.push(_loc10_);
+                  }
+               }
+               _loc7_ = _loc8_;
+            }
+            _loc8_ = RoomManagerWorld.instance.layerManager.bkg;
+            _loc9_ = _loc8_.numChildren;
+            while(--_loc9_ >= 0)
+            {
+               _loc10_ = _loc8_.getChildAt(_loc9_);
+               if(_loc10_ != RoomManagerWorld.instance.layerManager.room_chat && _loc10_.visible)
+               {
+                  _loc10_.visible = false;
+                  _loc6_.push(_loc10_);
+               }
+            }
+            _loc13_ = new BitmapData(_loc11_,_loc12_,true,0);
+            _loc13_.draw(gMainFrame.stage,new Matrix(1 / SCREEN_CELL,0,0,1 / SCREEN_CELL,-param2 / SCREEN_CELL,-param3 / SCREEN_CELL));
+         }
+         catch(e:Error)
+         {
+            if(_loc13_ != null)
+            {
+               _loc13_.dispose();
+               _loc13_ = null;
+            }
+         }
+         for each(_loc10_ in _loc6_)
+         {
+            _loc10_.visible = true;
+         }
+         if(_loc13_ == null)
+         {
+            return "";
+         }
+         _loc16_ = 0;
+         while(_loc16_ < _loc12_)
+         {
+            _loc19_ = "";
+            _loc17_ = 0;
+            while(_loc17_ < _loc11_)
+            {
+               _loc18_ = 0;
+               _loc9_ = 0;
+               while(_loc9_ < 4)
+               {
+                  if(_loc17_ + _loc9_ < _loc11_ && _loc13_.getPixel32(_loc17_ + _loc9_,_loc16_) >>> 24 >= SCREEN_COVER_ALPHA)
+                  {
+                     _loc18_ |= 8 >> _loc9_;
+                     _loc15_ = true;
+                  }
+                  _loc9_++;
+               }
+               _loc19_ += _loc18_.toString(16);
+               _loc17_ += 4;
+            }
+            _loc14_.push(_loc19_);
+            _loc16_++;
+         }
+         _loc13_.dispose();
+         return _loc15_ ? _loc11_ + "|" + _loc14_.join(",") : "";
       }
       
       public static function openTool(param1:int) : void

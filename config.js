@@ -155,7 +155,7 @@ module.exports = {
   // 49 and 50: its link to a colour picker.
   // 61: the Owner, Moderator and Verified name tag badges seen by everyone.
   // 62: "Custom pictures" in the settings menu, to hide players' item pictures.
-  buildVersion: env.AJ_BUILD_VERSION || "75",
+  buildVersion: env.AJ_BUILD_VERSION || "78",
   // what the official CDN is asked for; not ours to change.
   upstreamBuildVersion: "3",
 
