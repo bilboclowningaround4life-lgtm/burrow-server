@@ -475,6 +475,7 @@
           <button role="tab" data-tab="masterpieces" data-needs="player.view" aria-selected="false"><span class="icon" aria-hidden="true">&#9635;</span>Masterpieces<span id="masterpiece-count"></span></button>
           <button role="tab" data-tab="bans" data-needs="player.view" aria-selected="false"><span class="icon" aria-hidden="true">&#8856;</span>Bans</button>
           <button role="tab" data-tab="stats" data-needs="player.view" aria-selected="false"><span class="icon" aria-hidden="true">&#9636;</span>Stats</button>
+          <button role="tab" data-tab="mod-log" data-needs="staff.log" aria-selected="false" hidden><span class="icon" aria-hidden="true">&#9776;</span>Mod log</button>
           <button role="tab" data-tab="review" data-needs="items.approve" aria-selected="false" hidden><span class="icon" aria-hidden="true">&#10004;</span>Review</button>
           <button role="tab" data-tab="wear-rules" data-needs="items.restrict" aria-selected="false" hidden><span class="icon" aria-hidden="true">&#9873;</span>Wear rules</button>
           <button role="tab" data-tab="items" data-needs="items.create" aria-selected="false" hidden><span class="icon" aria-hidden="true">&#10070;</span>Items</button>
@@ -989,6 +990,17 @@
             </div>
           </div>
           <p class="status" id="control-status" role="status"></p>
+        </section>
+      </div>
+
+      <div data-view="mod-log" hidden>
+        <section>
+          <h2>What staff did</h2>
+          <div class="table-wrap"><table>
+            <thead><tr><th>When</th><th>Who</th><th>What</th><th>Player</th><th>Detail</th></tr></thead>
+            <tbody id="mod-log"></tbody>
+          </table></div>
+          <div class="empty" id="no-mod-log" hidden>Nothing yet.</div>
         </section>
       </div>
 
@@ -2960,6 +2972,19 @@
         }
         else if (shown === "stats") {
           await window.statsView.load(api);
+        }
+        else if (shown === "mod-log") {
+          const result = await api("modlog");
+          if (result.ok) {
+            $("mod-log").replaceChildren(...result.data.log.map(entry => {
+              const row = el("tr");
+              const detail = el("td", entry.detail);
+              detail.style.whiteSpace = "normal";
+              row.append(el("td", when(entry.at)), el("td", entry.by), el("td", entry.action), el("td", entry.target || "—"), detail);
+              return row;
+            }));
+            $("no-mod-log").hidden = result.data.log.length > 0;
+          }
         }
         else if (shown === "bans") {
           const [result, hits] = await Promise.all([api("bans"), api("filterhits")]);
