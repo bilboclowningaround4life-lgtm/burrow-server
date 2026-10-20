@@ -2298,8 +2298,55 @@ package
          drawChatFilter();
       }
       
-      // the server's rules, word for word as the owner gave them
-      private static const RULES_HTML:String = "<font size=\"16\" color=\"#563421\"><b>[1] Be Respectful / Have Common Sense</b></font><br><font size=\"13\" color=\"#6E4A2E\"><b>This is quite self explanatory. Be kind, treat people how you would want to be treated. If someone is uncomfortable with something you are saying and or doing, please respect that of them and do not argue against it, even if it may seem ridiculous in your eyes.</b></font><br><br><font size=\"16\" color=\"#563421\"><b>[2] No Direct Harassment / Bullying</b></font><br><font size=\"13\" color=\"#6E4A2E\"><b>If you are being disrespectful towards another person, Moderators have every right to punish you. Please don't be an asshole. Thank you.</b></font><br><br><font size=\"16\" color=\"#563421\"><b>[3] Keep Personal Information for Yourself.</b></font><br><font size=\"13\" color=\"#6E4A2E\"><b>As friendly that people may seem on this platform, never share personal identifying details with ANYONE. This leads to a lot of unsafe situations. Please be safe and responsible with the information you give to other people.</b></font><br><br><font size=\"16\" color=\"#563421\"><b>[4] Keep Drama OUT</b></font><br><font size=\"13\" color=\"#6E4A2E\"><b>If you have personal issues with another person, it is not our responsibility unless said person is confirmed to be problematic towards something against the rules of our server. Please do not bring arguments into our public chat, you will be muted until things clear up. Keep it in DMS.</b></font><br><br><font size=\"16\" color=\"#563421\"><b>[5] No NSFW!</b></font><br><font size=\"13\" color=\"#6E4A2E\"><b>NSFW and Suggestive Content are entirely banned from the server, period. We do not want to be a place that allows predatory behavior to fester. If you are unsure of what specific details this goes under, feel free to ask in a ticket.</b></font><br><br><font size=\"16\" color=\"#563421\"><b>[8] Report Any Issues</b></font><br><font size=\"13\" color=\"#6E4A2E\"><b>Issues can be anything from harassment, a person you are uncomfortable with, bugs, etc. Moderators are always happy to help!</b></font><br><br><font size=\"13\" color=\"#6E4A2E\"><b>Burrow gives players more freedom than the original game, including free chat. If you do not want to see certain content you may utilise the client side chat filter and block players, which has an option to completely hide them on your side.</b></font><br><br><font size=\"13\" color=\"#6E4A2E\"><b>These options are found in the in-game settings or player cards.</b></font><br><br><font size=\"16\" color=\"#563421\"><b>burrow.moe/terms</b></font>";
+      // the rules come from the server's data/rules.txt (GET /rules.txt), read
+      // each time the window opens, so they change without a new client: a
+      // line starting "# " is a heading, the rest is shown as it is written.
+      private static const RULES_HEADING:String = "<font size=\"16\" color=\"#563421\"><b>";
+
+      private static const RULES_BODY:String = "<font size=\"13\" color=\"#6E4A2E\"><b>";
+
+      private static function rulesHtml(param1:String) : String
+      {
+         var _loc2_:Array = param1.replace(/\r/g,"").split("\n");
+         var _loc3_:Array = [];
+         var _loc4_:String = null;
+         var _loc5_:int = 0;
+         while(_loc5_ < _loc2_.length)
+         {
+            _loc4_ = String(_loc2_[_loc5_]).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+            if(_loc4_.indexOf("# ") == 0)
+            {
+               _loc3_.push(RULES_HEADING + _loc4_.substr(2) + "</b></font>");
+            }
+            else
+            {
+               _loc3_.push(RULES_BODY + _loc4_ + "</b></font>");
+            }
+            _loc5_++;
+         }
+         return _loc3_.join("<br>");
+      }
+
+      private function loadRules() : void
+      {
+         var _loc1_:URLLoader = new URLLoader();
+         _rulesText.htmlText = rulesHtml("Loading...");
+         _loc1_.addEventListener("complete",onRulesLoaded);
+         _loc1_.addEventListener("ioError",onRulesFailed);
+         _loc1_.addEventListener("securityError",onRulesFailed);
+         _loc1_.load(new URLRequest(gMainFrame.clientInfo.websiteURL + "rules.txt?t=" + new Date().getTime()));
+      }
+
+      private function onRulesLoaded(param1:Event) : void
+      {
+         _rulesText.htmlText = rulesHtml(String(URLLoader(param1.currentTarget).data));
+         _rulesText.scrollV = 1;
+      }
+
+      private function onRulesFailed(param1:Event) : void
+      {
+         _rulesText.htmlText = rulesHtml("The rules could not be loaded. Try again in a moment.");
+      }
       
       private var _rulesWin:Sprite;
       
@@ -2347,7 +2394,6 @@ package
          _rulesText.y = -158;
          _rulesText.width = 462;
          _rulesText.height = 338;
-         _rulesText.htmlText = RULES_HTML;
          _loc5_ = GETDEFINITIONBYNAME("arrow_r_btnContOld");
          _loc5_.rotation = -90;
          _loc5_.x = 236;
@@ -2379,6 +2425,7 @@ package
          _rulesWin.visible = param1;
          if(param1)
          {
+            loadRules();
             _rulesText.scrollV = 1;
             setChildIndex(_rulesWin,numChildren - 1);
          }
