@@ -503,6 +503,15 @@
                   <button type="button" data-action="rename">Rename</button></div>
               </div>
               <div class="action">
+                <h3>Lost access</h3>
+                <p class="hint">A new random password, shown once. They are signed out everywhere and should change it on their account page.</p>
+                <div class="row"><label class="check"><input type="checkbox" id="temp-two-step-off"> Turn off their 2FA too</label></div>
+                <div class="row" style="margin-top:8px"><button type="button" data-action="tempPassword">Make temporary password</button></div>
+                <div class="row" style="margin-top:8px" id="temp-password-row" hidden>
+                  <input id="temp-password" readonly aria-label="Temporary password" spellcheck="false" style="font-family:monospace">
+                  <button type="button" id="temp-password-copy">Copy</button></div>
+              </div>
+              <div class="action">
                 <h3>Adventure level</h3>
                 <div class="row"><input id="quest-level" type="number" min="0" max="100" step="1" aria-label="Adventure level of the animal in use">
                   <button type="button" data-action="level">Set</button></div>
@@ -1529,6 +1538,7 @@
           label.append(box, ` ${badge.label}`);
           return label;
         }));
+        $("temp-two-step-off").disabled = !current || !current.twoStep;
         $("guide-toggle").textContent = current && current.guide ? "Remove guide" : "Make guide";
         $("discord-name").textContent = current && current.discord ? `Discord: ${current.discord}` : "No Discord linked";
         $("admin-dashboard-access").textContent = current && current.adminDashboardAccess ? "Remove Discord dashboard access" : "Allow Discord dashboard access";
@@ -1566,7 +1576,8 @@
         selected = username;
         current = null;
         setStatus($("detail-status"), "");
-        for (const id of ["new-name", "ban-hours", "silence-hours", "message-text", "gems-amount", "gift-value", "gift-text"]) {
+        $("temp-password-row").hidden = true;
+        for (const id of ["temp-password", "new-name", "ban-hours", "silence-hours", "message-text", "gems-amount", "gift-value", "gift-text"]) {
           $(id).value = "";
         }
         hashArg = username;
@@ -1720,6 +1731,7 @@
           case "permissions": return permissionChoices();
           case "adminDashboardAccess": return {on: !(current || {}).adminDashboardAccess};
           case "guide": return {on: !(current || {}).guide};
+          case "tempPassword": return {twoStepOff: $("temp-two-step-off").checked};
           case "message": return {text: $("message-text").value};
           case "gems": return {amount: numberFrom("gems-amount")};
           case "gift": return giftBody();
@@ -1730,6 +1742,10 @@
           default: return {};
         }
       };
+
+      $("temp-password-copy").addEventListener("click", () => {
+        navigator.clipboard.writeText($("temp-password").value).catch(() => $("temp-password").select());
+      });
 
       // the "N ago" buttons fill the last-seen box and press Set.
       $("detail").addEventListener("click", event => {
@@ -1760,12 +1776,20 @@
         if (action === "banDevices" && !window.confirm(`Hardware ban ${selected}? Everyone on their hardware is put out.`)) {
           return;
         }
+        if (action === "tempPassword" && !window.confirm(`Give ${selected} a new random password? Their old one stops working and they are signed out everywhere.`)) {
+          return;
+        }
         button.disabled = true;
         const result = await api("account", {username: selected, action, ...actionBody(action)});
         button.disabled = false;
         setStatus($("detail-status"), result.data.ok || result.data.error || "That did not work.", !result.ok);
         if (result.ok && action === "delete") {
           selected = null;
+        }
+        if (result.ok && action === "tempPassword") {
+          $("temp-password").value = result.data.password;
+          $("temp-password-row").hidden = false;
+          $("temp-two-step-off").checked = false;
         }
         if (result.ok && action === "rename") {
           selected = result.data.username;
