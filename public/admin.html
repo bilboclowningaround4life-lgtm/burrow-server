@@ -526,6 +526,8 @@
                 <h3>Badges</h3>
                 <div class="buttons" id="badge-boxes"></div>
                 <div class="row" style="margin-top:8px"><button type="button" data-action="badges">Set</button></div>
+                <div class="row" style="margin-top:8px" title="A guide's name tag and chat bubble, seen by everyone; from their next login">
+                  <button type="button" data-action="guide" id="guide-toggle"></button></div>
                 <div class="row" style="margin-top:8px" title="Players link their Discord themselves, on the account page">
                   <span class="hint" id="discord-name"></span>
                   <button type="button" data-action="discord">Unlink Discord</button></div>
@@ -1527,6 +1529,7 @@
           label.append(box, ` ${badge.label}`);
           return label;
         }));
+        $("guide-toggle").textContent = current && current.guide ? "Remove guide" : "Make guide";
         $("discord-name").textContent = current && current.discord ? `Discord: ${current.discord}` : "No Discord linked";
         $("admin-dashboard-access").textContent = current && current.adminDashboardAccess ? "Remove Discord dashboard access" : "Allow Discord dashboard access";
         $("admin-dashboard-access").disabled = !current || (!current.discord && !current.adminDashboardAccess);
@@ -1716,6 +1719,7 @@
           case "role": return {role: $("role-select").value};
           case "permissions": return permissionChoices();
           case "adminDashboardAccess": return {on: !(current || {}).adminDashboardAccess};
+          case "guide": return {on: !(current || {}).guide};
           case "message": return {text: $("message-text").value};
           case "gems": return {amount: numberFrom("gems-amount")};
           case "gift": return giftBody();
