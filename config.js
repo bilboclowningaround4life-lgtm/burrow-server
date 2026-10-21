@@ -201,7 +201,7 @@ module.exports = {
   // are written into both pages. the emails and the host's country are
   // placeholders until set; the operator is, at the owner's word, said to
   // be in the EU without a name or a country.
-  termsVersion: "2026-10-17",
+  termsVersion: "2026-10-21",
   legalEmail: env.AJ_LEGAL_EMAIL || "legal@burrow.moe",
   adminEmail: env.AJ_ADMIN_EMAIL || "admin@burrow.moe",
   operator: env.AJ_OPERATOR || "an individual based in the European Union",
