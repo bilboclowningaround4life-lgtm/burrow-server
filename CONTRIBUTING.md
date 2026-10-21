@@ -48,6 +48,8 @@ The optional Discord staff bot is enabled only with `AJ_DISCORD_BOT_TOKEN` and `
 
 All visible bot messages, including errors, status cards, reports, audit logs, and interaction updates, must use Discord Components V2: set `MessageFlags.IsComponentsV2` and use containers/text displays rather than `content` or embeds. Keep player-supplied text safe from mentions and avoid relaying chat, addresses, device data, or tokens to Discord.
 
+GitHub update cards are produced only from signed push webhooks. Keep that route signature-verified before parsing or posting a payload, limit request size, and do not expose webhook secrets in commits, logs, cards, or pull requests.
+
 ## Server and panel changes
 
 The server code lives in `lib/`; browser pages live in `public/`; protocol behavior is primarily in `lib/world.js` and the related feature modules. Reuse the panel's shared moderation action path instead of copying bans, warnings, silences, or rank checks into a new surface.
