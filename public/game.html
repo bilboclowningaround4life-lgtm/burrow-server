@@ -32,6 +32,11 @@
       #theatre[hidden], #theatre [hidden] {
         display: none !important;
       }
+      /* no ring around a button that was clicked (the desktop client's
+         Chromium 87 still draws one); the keyboard's still shows */
+      #theatre button:focus:not(:focus-visible) {
+        outline: none;
+      }
       /* the game draws over it just now (ajTheatreScreen) */
       #theatre .covered {
         visibility: hidden;
@@ -55,8 +60,12 @@
         display: block;
       }
       /* in the game's own colours: cream panels, brown edges, a green "go" */
-      #own-video-open {
+      #theatre-pills {
         position: absolute;
+        display: flex;
+        gap: calc(8 * var(--px));
+      }
+      .theatre-pill {
         pointer-events: auto;
         font: 700 calc(13 * var(--px)) / 1 "DigitalDelivery", Arial, sans-serif;
         color: #6d4330;
@@ -68,14 +77,75 @@
         cursor: pointer;
         white-space: nowrap;
       }
-      #own-video-open:hover {
+      .theatre-pill:hover {
         background: linear-gradient(#fffef5, #fff0be);
       }
-      #own-video-open:active {
+      .theatre-pill:active {
         transform: translateY(calc(2 * var(--px)));
         box-shadow: none;
       }
-      #own-video-box {
+      /* the theatre browser's bar (experimental; the desktop client draws
+         the page itself, over the screen) */
+      #browser-bar {
+        position: absolute;
+        pointer-events: auto;
+        box-sizing: border-box;
+        display: flex;
+        align-items: center;
+        gap: calc(5 * var(--px));
+        height: calc(30 * var(--px));
+        padding: 0 calc(5 * var(--px));
+        background: #fff2c4;
+        border: calc(2 * var(--px)) solid #7f6744;
+        border-radius: 999px;
+        box-shadow: 0 calc(2 * var(--px)) 0 #7f6744;
+      }
+      .aj-round {
+        flex: none;
+        width: calc(22 * var(--px));
+        height: calc(22 * var(--px));
+        padding: 0;
+        font: 700 calc(12 * var(--px)) / 1 Arial, sans-serif;
+        color: #6d4330;
+        background: linear-gradient(#fffbe6, #ffe39a);
+        border: calc(2 * var(--px)) solid #7f6744;
+        border-radius: 50%;
+        cursor: pointer;
+      }
+      .aj-round:hover {
+        background: linear-gradient(#fffef5, #fff0be);
+      }
+      .aj-round:disabled {
+        opacity: 0.4;
+        cursor: default;
+      }
+      #browser-address {
+        flex: 1;
+        min-width: 0;
+        height: calc(20 * var(--px));
+        box-sizing: border-box;
+        font: 400 calc(12 * var(--px)) / 1 Arial, Helvetica, sans-serif;
+        color: #3d2716;
+        background: #fff;
+        border: calc(2 * var(--px)) solid #c9a86a;
+        border-radius: 999px;
+        padding: 0 calc(9 * var(--px));
+        outline: none;
+      }
+      #browser-address:focus {
+        border-color: #7f6744;
+      }
+      #browser-bar .aj-button {
+        min-width: 0;
+        font-size: calc(12 * var(--px));
+        padding: calc(4 * var(--px)) calc(11 * var(--px));
+      }
+      #browser-close {
+        background: radial-gradient(circle at 50% 35%, #ff7a5c, #c8321a 70%);
+        border-color: #8e2b16;
+        color: #fff;
+      }
+      .aj-box {
         position: absolute;
         pointer-events: auto;
         box-sizing: border-box;
@@ -88,7 +158,7 @@
         border-radius: calc(18 * var(--px));
         box-shadow: inset 0 0 0 calc(2 * var(--px)) #ffe39a, 0 calc(4 * var(--px)) 0 rgba(0, 0, 0, 0.35);
       }
-      #own-video-box h2 {
+      .aj-box h2 {
         margin: 0 calc(24 * var(--px)) calc(10 * var(--px)) 0;
         font-size: calc(20 * var(--px));
         font-weight: 700;
@@ -96,7 +166,7 @@
         letter-spacing: 0.02em;
         text-shadow: 0 0 calc(2 * var(--px)) #6d4330, calc(1.5 * var(--px)) calc(1.5 * var(--px)) 0 #6d4330, calc(-1.5 * var(--px)) calc(1.5 * var(--px)) 0 #6d4330, calc(1.5 * var(--px)) calc(-1.5 * var(--px)) 0 #6d4330, calc(-1.5 * var(--px)) calc(-1.5 * var(--px)) 0 #6d4330;
       }
-      #own-video-url {
+      .aj-box input {
         box-sizing: border-box;
         width: 100%;
         font: 400 calc(13 * var(--px)) / 1.2 Arial, Helvetica, sans-serif;
@@ -108,10 +178,10 @@
         box-shadow: inset 0 calc(2 * var(--px)) calc(3 * var(--px)) rgba(109, 67, 48, 0.25);
         outline: none;
       }
-      #own-video-url:focus {
+      .aj-box input:focus {
         border-color: #7f6744;
       }
-      #own-video-url::placeholder {
+      .aj-box input::placeholder {
         color: #a88f6a;
       }
       .own-video-buttons {
@@ -149,7 +219,7 @@
       .aj-button.stop:hover {
         background: linear-gradient(#ffab7c, #e05634);
       }
-      #own-video-close {
+      .aj-box-close {
         position: absolute;
         top: calc(-10 * var(--px));
         right: calc(-10 * var(--px));
@@ -164,10 +234,10 @@
         box-shadow: 0 0 0 calc(2 * var(--px)) #7f6744, 0 calc(2 * var(--px)) 0 calc(2 * var(--px)) rgba(0, 0, 0, 0.3);
         cursor: pointer;
       }
-      #own-video-close:hover {
+      .aj-box-close:hover {
         background: radial-gradient(circle at 50% 35%, #ff8f74, #d93d22 70%);
       }
-      #own-video-said {
+      .aj-box-said {
         min-height: calc(15 * var(--px));
         margin: calc(8 * var(--px)) 0 0;
         font: 400 calc(12 * var(--px)) / 1.25 Arial, Helvetica, sans-serif;
@@ -179,16 +249,27 @@
     <div id="theatre" hidden>
       <iframe id="theatre-video" class="theatre-screen" title="Theatre video" allow="autoplay; encrypted-media" referrerpolicy="strict-origin-when-cross-origin"></iframe>
       <div id="own-video" class="theatre-screen" hidden></div>
-      <button type="button" id="own-video-open">&#9654; Your Video</button>
-      <form id="own-video-box" hidden>
+      <div id="theatre-pills">
+        <button type="button" id="own-video-open" class="theatre-pill">&#9654; Your Video</button>
+        <button type="button" id="browser-open" class="theatre-pill" hidden title="Experimental: a web browser on the screen, for you alone">&#127760; Browser</button>
+      </div>
+      <form id="browser-bar" hidden>
+        <button type="button" id="browser-back" class="aj-round" aria-label="Back" disabled>&#9664;</button>
+        <button type="button" id="browser-forward" class="aj-round" aria-label="Forward" disabled>&#9654;</button>
+        <button type="button" id="browser-reload" class="aj-round" aria-label="Reload">&#8635;</button>
+        <input id="browser-address" type="text" placeholder="Search or type an address" autocomplete="off" spellcheck="false" aria-label="Address">
+        <button type="submit" class="aj-button go">Go</button>
+        <button type="button" id="browser-close" class="aj-round" aria-label="Close the browser">&times;</button>
+      </form>
+      <form id="own-video-box" class="aj-box" hidden>
         <h2>Your Video</h2>
-        <button type="button" id="own-video-close" aria-label="Close">&times;</button>
+        <button type="button" id="own-video-close" class="aj-box-close" aria-label="Close">&times;</button>
         <input id="own-video-url" type="url" placeholder="Paste a link: YouTube, Vimeo, .mp4, .webm, .mp3" autocomplete="off" spellcheck="false" aria-label="Video link">
         <div class="own-video-buttons">
           <button type="submit" class="aj-button go">Play</button>
           <button type="button" id="own-video-stop" class="aj-button stop">Stop</button>
         </div>
-        <p id="own-video-said" role="status"></p>
+        <p id="own-video-said" class="aj-box-said" role="status"></p>
       </form>
     </div>
     <script>
@@ -296,6 +377,7 @@
         theatreCover = theatreScreen && parts.length === 3 ? coverRects(Number(parts[1]), parts[2].split(",")) : [];
         placeTheatre();
         ownVideo.inTheatre(theatreScreen !== null);
+        browserPage.inTheatre(theatreScreen !== null);
       }
 
       // the covered cells as rectangles: runs along each row, and a run
@@ -385,12 +467,22 @@
         // the button under the screen's left corner, or inside it when the
         // stage ends first; the box over the middle of the screen.
         const below = y + h + 8 + BUTTON_ROOM <= STAGE_H;
-        place(document.getElementById("own-video-open"), x + 4, below ? y + h + 8 : y + h - BUTTON_ROOM);
+        const barY = below ? y + h + 8 : y + h - BUTTON_ROOM;
+        place(document.getElementById("theatre-pills"), x + 4, barY);
+        const bar = document.getElementById("browser-bar");
+        place(bar, x, barY);
+        bar.style.width = `${w * scale}px`;
         place(document.getElementById("own-video-box"), x + (w - BOX_W) / 2, Math.max(4, y + (h - BOX_H) / 2));
         const clip = coverClip(scale);
         theatreVideo.style.clipPath = clip;
         document.getElementById("own-video").style.clipPath = clip;
-        for (const id of ["own-video-open", "own-video-box"]) {
+        // the browser is drawn by the desktop client: told where, in this
+        // page's pixels, and above the bar when the bar is on the screen.
+        browserPage.place({
+          x: theatre.offsetLeft + x * scale, y: theatre.offsetTop + y * scale,
+          w: w * scale, h: (below ? h : h - BUTTON_ROOM) * scale, clip,
+        });
+        for (const id of ["theatre-pills", "own-video-box", "browser-bar"]) {
           const element = document.getElementById(id);
           element.classList.toggle("covered", underCover(element, scale));
         }
@@ -409,12 +501,14 @@
           theatreVideo.removeAttribute("src");
           theatreVideo.classList.remove("visible");
           ownVideo.roomVideo(false);
+          browserPage.roomVideo(false);
           return;
         }
         theatreVideo.src = `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0&modestbranding=1`;
         theatreVideo.classList.add("visible");
         // what staff play for the room comes first; the player's own waits.
         ownVideo.roomVideo(true);
+        browserPage.roomVideo(true);
       }
 
       // a video of the player's own choosing on the theatre screen, seen by
@@ -517,6 +611,7 @@
             return;
           }
           stop();
+          browserPage.close();
           if (found.frame) {
             playing = document.createElement("iframe");
             playing.title = "Your video";
@@ -588,6 +683,11 @@
         });
 
         return {
+          // the browser takes the screen: the player's own video and its box go.
+          giveWay() {
+            stop();
+            close();
+          },
           // in a theatre or not; out of one, the video is gone.
           inTheatre(yes) {
             if (yes === here) {
@@ -606,6 +706,133 @@
               said.textContent = "";
             }
             show();
+          },
+        };
+      })();
+
+      // the theatre's browser (experimental): a web page on the screen, for
+      // the player alone, when the admin has turned it on (the server marks
+      // this page so: lib/panel.js). the desktop client (1.3.3) draws it in a
+      // webview of its own over this page, which says where, what the game
+      // draws over it, and where to go. nothing of it goes to the server; the page it shows sees nothing
+      // of the game, nor this page of it but its address.
+      const browserPage = (() => {
+        const $ = id => document.getElementById(id);
+        const opener = $("browser-open");
+        const bar = $("browser-bar");
+        const address = $("browser-address");
+        const pills = $("theatre-pills");
+        const START = "https://duckduckgo.com/";
+        const serverAllows = document.documentElement.dataset.theatreBrowser === "on";
+        let allowed = false; // and the client can
+        let open = false;
+        let roomPlaying = false;
+        let where = null; // the last place told, without `shown`
+        let told = "";
+
+        const tell = message => window.ipc.sendToHost("browser", message);
+        const placeMessage = () => ({...where, shown: open && theatreScreen !== null && !roomPlaying});
+        const sendPlace = () => {
+          if (!open || !where) {
+            return;
+          }
+          const message = placeMessage();
+          const text = JSON.stringify(message);
+          if (text !== told) {
+            told = text;
+            tell({action: "place", where: message});
+          }
+        };
+
+        // what was typed: an address (with or without https://), else a search.
+        const addressFor = text => {
+          const typed = String(text || "").trim();
+          if (/^https?:\/\//i.test(typed)) {
+            return typed;
+          }
+          if (/^[^\s/]+\.[a-z]{2,}(?:[/:?#]\S*)?$/i.test(typed)) {
+            return `https://${typed}`;
+          }
+          return `https://duckduckgo.com/?q=${encodeURIComponent(typed)}`;
+        };
+
+        const show = () => {
+          opener.hidden = !allowed;
+          pills.hidden = open;
+          bar.hidden = !open;
+        };
+
+        const close = () => {
+          if (!open) {
+            return;
+          }
+          open = false;
+          told = "";
+          tell({action: "close"});
+          show();
+        };
+
+        opener.addEventListener("click", () => {
+          ownVideo.giveWay();
+          open = true;
+          show();
+          placeTheatre();
+          tell({action: "go", url: START, where: placeMessage()});
+          address.value = "";
+          address.focus();
+        });
+        $("browser-close").addEventListener("click", close);
+        $("browser-back").addEventListener("click", () => tell({action: "back"}));
+        $("browser-forward").addEventListener("click", () => tell({action: "forward"}));
+        $("browser-reload").addEventListener("click", () => tell({action: "reload"}));
+        bar.addEventListener("submit", event => {
+          event.preventDefault();
+          if (address.value.trim()) {
+            tell({action: "go", url: addressFor(address.value)});
+            address.blur();
+          }
+        });
+        address.addEventListener("keydown", event => {
+          if (event.key === "Escape") {
+            address.blur();
+          }
+        });
+
+        // the desktop client says it can; an older one never does.
+        window.ipc.on("browserSupported", (event, on) => {
+          allowed = serverAllows && on === true;
+          if (!allowed) {
+            close();
+          }
+          show();
+        });
+        // where the browser is now, for the bar
+        window.ipc.on("browserState", (event, state) => {
+          if (!open || !state || typeof state !== "object") {
+            return;
+          }
+          if (document.activeElement !== address) {
+            address.value = String(state.url || "") === "about:blank" ? "" : String(state.url || "");
+          }
+          $("browser-back").disabled = state.back !== true;
+          $("browser-forward").disabled = state.forward !== true;
+        });
+
+        return {
+          close,
+          // from placeTheatre: {x, y, w, h, clip} in this page's pixels
+          place(next) {
+            where = next;
+            sendPlace();
+          },
+          roomVideo(on) {
+            roomPlaying = on;
+            sendPlace();
+          },
+          inTheatre(yes) {
+            if (!yes) {
+              close();
+            }
           },
         };
       })();

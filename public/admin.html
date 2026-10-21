@@ -1091,6 +1091,12 @@
             <label class="check"><input id="debug-onsale" type="checkbox"> Everything on sale</label>
             <p class="status" id="debug-sale-status" role="status"></p>
           </section>
+          <section>
+            <h2>Theatre browser (experimental)</h2>
+            <label class="check"><input id="debug-theatre-browser" type="checkbox"> Players may open a web browser on the theatre screen</label>
+            <p class="hint">For each player alone, on desktop client 1.3.3 or newer; nothing they see reaches the server. The client's browser is an old Chrome, so a bad site could harm a player's computer.</p>
+            <p class="status" id="debug-browser-status" role="status"></p>
+          </section>
         </div>
       </div>
 
@@ -2609,6 +2615,7 @@
           $("debug-player").value = player;
         }
         $("debug-onsale").checked = data.everythingOnSale;
+        $("debug-theatre-browser").checked = data.theatreBrowser;
         if (debugRooms.length !== data.rooms.length) {
           debugRooms = data.rooms;
           renderDebugRooms();
@@ -2621,6 +2628,10 @@
         setStatus($("debug-status"), result.data.ok || result.data.error || "That did not work.", !result.ok);
       });
       $("debug-room").addEventListener("dblclick", () => $("debug-go").click());
+      $("debug-theatre-browser").addEventListener("change", async () => {
+        const result = await api("debug", {action: "theatreBrowser", on: $("debug-theatre-browser").checked});
+        setStatus($("debug-browser-status"), result.data.ok || result.data.error || "That did not work.", !result.ok);
+      });
       $("debug-onsale").addEventListener("change", async () => {
         const result = await api("debug", {action: "everythingOnSale", on: $("debug-onsale").checked});
         setStatus($("debug-sale-status"), result.data.ok || result.data.error || "That did not work.", !result.ok);
