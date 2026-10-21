@@ -65,9 +65,9 @@ package avatar
       private static const SLIDE_FRAME_TIME:Number = 41.666666666666664;
 
       // name tag badges everyone sees, buddy or not, as the game shows its
-      // News Crew camera (NameBar.isVIPBadge): the Owner, Moderator and
-      // Verified badges of lib/badges.js, by their def ids.
-      private static const PUBLIC_BADGE_IDS:Array = [63,64,76];
+      // News Crew camera (NameBar.isVIPBadge): the Owner, Moderator,
+      // Developer and Verified badges of lib/badges.js, by their def ids.
+      private static const PUBLIC_BADGE_IDS:Array = [63,64,66,76];
       
       private static const GLOW_LAND_DEFAULT_COLOR:int = 5586479;
       

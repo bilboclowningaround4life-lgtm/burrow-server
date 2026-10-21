@@ -134,6 +134,19 @@ module.exports = {
     clientSecret: env.AJ_DISCORD_CLIENT_SECRET || "",
     botToken: env.AJ_DISCORD_BOT_TOKEN || "",
     guildId: env.AJ_DISCORD_GUILD_ID || "",
+    // Optional Components V2 notification channels. Leave any empty to
+    // disable that stream: reports, public status, game joins/leaves, the
+    // moderation audit trail, and Discord bot command/audit events.
+    reportsChannelId: env.AJ_DISCORD_REPORTS_CHANNEL_ID || "",
+    statusChannelId: env.AJ_DISCORD_STATUS_CHANNEL_ID || "",
+    gameLogsChannelId: env.AJ_DISCORD_GAME_LOGS_CHANNEL_ID || "",
+    moderationLogsChannelId: env.AJ_DISCORD_MOD_LOGS_CHANNEL_ID || "",
+    botLogsChannelId: env.AJ_DISCORD_BOT_LOGS_CHANNEL_ID || "",
+    // A signed GitHub push webhook at /discord/github can turn commits into
+    // a Components V2 update card. All three values are needed to enable it.
+    githubRepository: env.AJ_GITHUB_REPOSITORY || "", // owner/repository
+    githubWebhookSecret: env.AJ_GITHUB_WEBHOOK_SECRET || "",
+    updatesChannelId: env.AJ_DISCORD_UPDATES_CHANNEL_ID || "",
   },
   deployVersion: env.AJ_DEPLOY_VERSION || "1830",
   // older builds the CDN still serves, asked in turn for a room file the
@@ -153,7 +166,7 @@ module.exports = {
   // 41: the game's text says "Burrow" where it said Animal Jam.
   // 48: the item giver (the item finder renamed) with previews and hex colours;
   // 49 and 50: its link to a colour picker.
-  // 61: the Owner, Moderator and Verified name tag badges seen by everyone.
+  // 61: the Owner, Moderator, Developer and Verified name tag badges seen by everyone.
   // 62: "Custom pictures" in the settings menu, to hide players' item pictures.
   buildVersion: env.AJ_BUILD_VERSION || "78",
   // what the official CDN is asked for; not ours to change.

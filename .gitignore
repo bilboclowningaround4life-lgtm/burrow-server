@@ -21,6 +21,7 @@ __pycache__/
 # internal markdown files
 *.md
 !deploy/README.md
+!/CONTRIBUTING.md
 /HANDOFF.md
 /DISCOVERIES.md
 /GOING-PUBLIC.md
