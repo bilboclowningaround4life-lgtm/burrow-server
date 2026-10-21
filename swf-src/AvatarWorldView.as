@@ -2095,7 +2095,7 @@ package avatar
                   _splash.showShadow(false);
                }
                _currPetName = LocalizationManager.translatePetName(param5);
-               _namebar.setAvName(_currPetName);
+               setPetFormName();
             }
             else
             {
@@ -2152,7 +2152,7 @@ package avatar
             {
                _splash.showShadow(false);
             }
-            _namebar.setAvName(_currPetName);
+            setPetFormName();
          }
          else
          {
@@ -2169,6 +2169,21 @@ package avatar
       public function isPetForm() : Boolean
       {
          return _shouldShowPetOnly;
+      }
+
+      // the name over the pet in its form, as the settings menu's Usernames /
+      // Animal Names switch says: the player's username (the default), or
+      // the pet's name
+      private function setPetFormName() : void
+      {
+         if(Utility.isSettingOn(MySettings.SETTINGS_USERNAME_BADGE))
+         {
+            _namebar.setAvName(_avatar,true,gMainFrame.userInfo.getUserInfoByUserName(_avatar.userName));
+         }
+         else
+         {
+            _namebar.setAvName(_currPetName ? _currPetName : _avatar.avName);
+         }
       }
 
       // chat balloons and emotes sit over the pet in its form, as the
@@ -2687,7 +2702,11 @@ package avatar
       
       public function updateNameBarName() : void
       {
-         if(_namebar)
+         if(_namebar && _shouldShowPetOnly)
+         {
+            setPetFormName();
+         }
+         else if(_namebar)
          {
             _namebar.setAvName(_avatar,Utility.isSettingOn(MySettings.SETTINGS_USERNAME_BADGE),gMainFrame.userInfo.getUserInfoByUserName(_avatar.userName));
          }
@@ -2714,9 +2733,9 @@ package avatar
             {
                _namebar.setColorAndBadge(0);
                _namebar.setColorBadgeAndXp(0,0,_isMember);
-               if(_shouldShowPetOnly && _currPetName)
+               if(_shouldShowPetOnly)
                {
-                  _namebar.setAvName(_currPetName);
+                  setPetFormName();
                }
                else
                {
