@@ -416,6 +416,7 @@
           <button role="tab" data-tab="music" aria-selected="false"><span class="icon" aria-hidden="true">&#9835;</span>Music</button>
           <button role="tab" data-tab="bans" aria-selected="false"><span class="icon" aria-hidden="true">&#8856;</span>Bans</button>
           <button role="tab" data-tab="moderators" aria-selected="false"><span class="icon" aria-hidden="true">&#9733;</span>Moderators</button>
+          <button role="tab" data-tab="discord" aria-selected="false"><span class="icon" aria-hidden="true">&#128172;</span>Discord</button>
           <button role="tab" data-tab="messages" aria-selected="false"><span class="icon" aria-hidden="true">&#9993;</span>Messages</button>
           <button role="tab" data-tab="logs" aria-selected="false"><span class="icon" aria-hidden="true">&#9776;</span>Logs</button>
           <button role="tab" data-tab="debug" aria-selected="false"><span class="icon" aria-hidden="true">&#9881;</span>Debug</button>
@@ -457,6 +458,96 @@
           <ul class="plain lock-results" id="quick-lock-results"></ul>
           <p class="hint" id="quick-lock-more" hidden></p>
           <p class="status" id="quick-lock-status" role="status"></p>
+        </section>
+      </div>
+
+      <div data-view="discord" hidden>
+        <section>
+          <h2>Discord staff bot</h2>
+          <p class="hint" id="discord-bot-summary">Checking Discord bot configuration…</p>
+          <dl id="discord-bot-facts"></dl>
+          <div class="send-row">
+            <button type="button" id="discord-bot-start">Start</button>
+            <button type="button" id="discord-bot-stop">Stop</button>
+            <button type="button" id="discord-bot-reconnect">Reconnect</button>
+            <button type="button" id="discord-bot-sync">Sync slash commands</button>
+          </div>
+          <p class="status" id="discord-bot-status" role="status"></p>
+        </section>
+        <section>
+          <h2>Bot modules</h2>
+          <p class="hint">Every listed module is configured on this page. Permissions for staff commands are managed in the dashboard’s Moderators role matrix.</p>
+          <div class="table-wrap"><table>
+            <thead><tr><th>Module</th><th>State</th><th>What it does</th></tr></thead>
+            <tbody id="discord-modules"></tbody>
+          </table></div>
+        </section>
+        <section>
+          <h2>Public status card</h2>
+          <p class="hint">This Components V2 card is updated every five minutes. Save changes, then publish immediately when the bot and public-status channel are configured.</p>
+          <form id="discord-status-form">
+            <label for="discord-status-title">Title</label>
+            <input id="discord-status-title" maxlength="80" placeholder="Burrow status" aria-label="Discord public status-card title">
+            <label for="discord-status-note">Status message</label>
+            <textarea id="discord-status-note" rows="3" maxlength="500" placeholder="Optional message shown above the live player and moderation counts." aria-label="Discord public status-card message"></textarea>
+            <div class="send-row">
+              <button class="primary" type="submit">Save status card</button>
+              <button type="button" id="discord-status-publish">Publish now</button>
+            </div>
+          </form>
+          <p class="status" id="discord-status-card-result" role="status"></p>
+        </section>
+        <section>
+          <h2>Notification channels</h2>
+          <p class="hint">Set a Discord channel ID for any stream you want. Leave a field empty to turn that stream off. Changes take effect immediately.</p>
+          <form id="discord-routing-form">
+            <div id="discord-channel-inputs"></div>
+            <label for="discord-github-repository">GitHub repository</label>
+            <input id="discord-github-repository" maxlength="201" placeholder="owner/repository" aria-label="GitHub repository for Discord update cards">
+            <div class="send-row"><button class="primary" type="submit">Save bot routing</button></div>
+          </form>
+          <p class="status" id="discord-routing-status" role="status"></p>
+        </section>
+        <section>
+          <h2>GitHub game updates</h2>
+          <p class="hint">Signed pushes become Components V2 commit cards. Client/SWF and game-asset pushes are marked as game updates.</p>
+          <dl id="github-update-facts"></dl>
+        </section>
+        <section>
+          <h2>Discord security</h2>
+          <p class="hint">AutoMod deletes matching messages and posts an audit card without storing message text. Anti-raid sends an alert when the join limit is reached. Enable the Message Content and Server Members intents for this bot in the Discord Developer Portal, then reconnect it.</p>
+          <form id="discord-security-form">
+            <label class="check"><input id="discord-security-enabled" type="checkbox"> Enable Discord AutoMod and anti-raid alerts</label>
+            <label class="check"><input id="discord-security-invites" type="checkbox"> Block Discord invite links</label>
+            <label for="discord-security-words">Blocked words or phrases</label>
+            <textarea id="discord-security-words" rows="4" maxlength="3000" placeholder="One word or phrase per line; matching is case-insensitive."></textarea>
+            <div class="row">
+              <label for="discord-security-spam">Messages allowed per 10 seconds</label>
+              <input id="discord-security-spam" type="number" min="2" max="20" step="1" inputmode="numeric">
+              <label for="discord-security-raid">Joins allowed per minute</label>
+              <input id="discord-security-raid" type="number" min="3" max="100" step="1" inputmode="numeric">
+            </div>
+            <div class="send-row"><button class="primary" type="submit">Save security settings</button></div>
+          </form>
+          <p class="status" id="discord-security-status" role="status"></p>
+        </section>
+        <section>
+          <h2>Tickets and member notices</h2>
+          <p class="hint">Tickets open with `/ticket open` and remain visible to the opener and the configured staff role. Welcome and goodbye messages support `{user}` and `{server}`.</p>
+          <form id="discord-community-form">
+            <label for="discord-ticket-category">Ticket category ID</label><input id="discord-ticket-category" inputmode="numeric" maxlength="25" placeholder="Required for tickets">
+            <label for="discord-ticket-staff-role">Ticket staff role ID</label><input id="discord-ticket-staff-role" inputmode="numeric" maxlength="25" placeholder="Required for tickets">
+            <label for="discord-welcome-channel">Welcome channel ID</label><input id="discord-welcome-channel" inputmode="numeric" maxlength="25" placeholder="Optional">
+            <textarea id="discord-welcome-message" rows="2" maxlength="500" placeholder="Welcome {user} to {server}!"></textarea>
+            <label for="discord-goodbye-channel">Goodbye channel ID</label><input id="discord-goodbye-channel" inputmode="numeric" maxlength="25" placeholder="Optional">
+            <textarea id="discord-goodbye-message" rows="2" maxlength="500" placeholder="Goodbye {user}."></textarea>
+            <div class="send-row"><button class="primary" type="submit">Save ticket and notice settings</button></div>
+          </form>
+          <p class="status" id="discord-community-status" role="status"></p>
+        </section>
+        <section>
+          <h2>Discord server moderation</h2>
+          <p class="hint">The consolidated bot also provides `/discord timeout`, `/discord untimeout`, `/discord kick`, `/discord ban`, `/discord unban`, and `/discord purge`. Give its Discord role the matching server permissions (Moderate Members, Kick Members, Ban Members, and Manage Messages) and keep that role above members it should moderate. Burrow staff permissions remain the first check.</p>
         </section>
       </div>
 
@@ -1209,6 +1300,161 @@
         ];
         $("server-facts").replaceChildren(...facts.flatMap(([name, value]) => [el("dt", name), el("dd", String(value))]));
       };
+
+      const renderDiscord = data => {
+        const configured = data.botTokenConfigured && data.guildId;
+        $("discord-bot-summary").textContent = !configured
+          ? "The Discord staff bot is off. Set AJ_DISCORD_BOT_TOKEN and AJ_DISCORD_GUILD_ID, then restart the server."
+          : data.connected ? "The Discord staff bot is connected and ready." : "The Discord staff bot is configured but is not connected. Check the server log and bot permissions.";
+        const facts = [
+          ["Bot token", data.botTokenConfigured ? "Configured" : "Missing"],
+          ["Guild", data.guildId || "Missing"],
+          ["Connection", data.connected ? "Connected" : "Not connected"],
+          ["Commands", (data.commands || []).join(", ") || "None"],
+        ];
+        $("discord-bot-facts").replaceChildren(...facts.flatMap(([name, value]) => [el("dt", name), el("dd", value)]));
+        $("discord-modules").replaceChildren(...(data.modules || []).map(module => {
+          const row = el("tr");
+          row.append(el("td", module.name), el("td", module.enabled ? "Enabled" : "Off / needs setup"), el("td", module.detail));
+          return row;
+        }));
+        $("discord-bot-status").textContent = configured
+          ? "Credentials and webhook secrets are intentionally never shown in this dashboard."
+          : "Add the missing environment variables to the service that starts Burrow; dashboard settings cannot store bot secrets.";
+        $("discord-bot-status").classList.toggle("bad", !configured || !data.connected);
+        const editingStatusCard = ["discord-status-title", "discord-status-note"].includes(document.activeElement && document.activeElement.id);
+        if (!editingStatusCard) {
+          $("discord-status-title").value = data.statusCard && data.statusCard.title || "Burrow status";
+          $("discord-status-note").value = data.statusCard && data.statusCard.note || "";
+        }
+        const editingRouting = document.activeElement && (document.activeElement.dataset.discordChannel || document.activeElement.id === "discord-github-repository");
+        if (!editingRouting) {
+          $("discord-channel-inputs").replaceChildren(...(data.channels || []).flatMap(channel => {
+            const label = el("label", channel.name);
+            label.htmlFor = `discord-channel-${channel.key}`;
+            const input = el("input");
+            input.id = label.htmlFor;
+            input.dataset.discordChannel = channel.key;
+            input.inputMode = "numeric";
+            input.maxLength = 25;
+            input.placeholder = "Discord channel ID (optional)";
+            input.value = channel.id || "";
+            input.setAttribute("aria-label", `${channel.name} Discord channel ID`);
+            return [label, input];
+          }));
+          $("discord-github-repository").value = data.github && data.github.repository || "";
+        }
+        const github = data.github || {};
+        const githubFacts = [
+          ["Repository", github.repository || "Missing (AJ_GITHUB_REPOSITORY)"],
+          ["Webhook secret", github.webhookSecretConfigured ? "Configured" : "Missing"],
+          ["Update channel", (data.channels || []).some(channel => channel.name === "GitHub updates" && channel.configured) ? "Configured" : "Missing"],
+          ["Webhook endpoint", github.endpoint || "/discord/github"],
+          ["Update cards", github.updatesEnabled ? "Enabled" : "Off until all three settings are configured"],
+        ];
+        $("github-update-facts").replaceChildren(...githubFacts.flatMap(([name, value]) => [el("dt", name), el("dd", value)]));
+        const editingSecurity = ["discord-security-words", "discord-security-spam", "discord-security-raid"].includes(document.activeElement && document.activeElement.id);
+        if (!editingSecurity) {
+          const security = data.security || {};
+          $("discord-security-enabled").checked = Boolean(security.enabled);
+          $("discord-security-invites").checked = Boolean(security.blockInvites);
+          $("discord-security-words").value = (security.blockedWords || []).join("\n");
+          $("discord-security-spam").value = String(security.spamLimit || 6);
+          $("discord-security-raid").value = String(security.raidJoinLimit || 12);
+          setStatus($("discord-security-status"), security.enabled
+            ? security.monitoring ? "Security monitoring is active." : "Security is saved. Reconnect the bot after enabling Discord Message Content and Server Members intents."
+            : "Security monitoring is off.", security.enabled && !security.monitoring);
+        }
+        const editingCommunity = ["discord-ticket-category", "discord-ticket-staff-role", "discord-welcome-channel", "discord-welcome-message", "discord-goodbye-channel", "discord-goodbye-message"].includes(document.activeElement && document.activeElement.id);
+        if (!editingCommunity) {
+          const community = data.community || {};
+          $("discord-ticket-category").value = community.ticketCategoryId || "";
+          $("discord-ticket-staff-role").value = community.ticketStaffRoleId || "";
+          $("discord-welcome-channel").value = community.welcomeChannelId || "";
+          $("discord-welcome-message").value = community.welcomeMessage || "";
+          $("discord-goodbye-channel").value = community.goodbyeChannelId || "";
+          $("discord-goodbye-message").value = community.goodbyeMessage || "";
+        }
+      };
+
+      const controlDiscordBot = async action => {
+        const buttons = ["discord-bot-start", "discord-bot-stop", "discord-bot-reconnect", "discord-bot-sync"].map($);
+        buttons.forEach(button => { button.disabled = true; });
+        const result = await api("discord/control", {action});
+        buttons.forEach(button => { button.disabled = false; });
+        setStatus($("discord-bot-status"), said(result), !result.ok);
+        refresh();
+      };
+      $("discord-bot-start").addEventListener("click", () => controlDiscordBot("start"));
+      $("discord-bot-stop").addEventListener("click", () => controlDiscordBot("stop"));
+      $("discord-bot-reconnect").addEventListener("click", () => controlDiscordBot("reconnect"));
+      $("discord-bot-sync").addEventListener("click", () => controlDiscordBot("sync"));
+
+      $("discord-routing-form").addEventListener("submit", async event => {
+        event.preventDefault();
+        const button = event.submitter;
+        if (button) button.disabled = true;
+        const fields = {githubRepository: $("discord-github-repository").value};
+        for (const input of $("discord-channel-inputs").querySelectorAll("input[data-discord-channel]")) {
+          fields[input.dataset.discordChannel] = input.value;
+        }
+        const result = await api("discord/config", fields);
+        if (button) button.disabled = false;
+        setStatus($("discord-routing-status"), said(result), !result.ok);
+        if (result.ok) refresh();
+      });
+
+      $("discord-security-form").addEventListener("submit", async event => {
+        event.preventDefault();
+        const button = event.submitter;
+        if (button) button.disabled = true;
+        const result = await api("discord/security", {
+          enabled: $("discord-security-enabled").checked,
+          blockInvites: $("discord-security-invites").checked,
+          blockedWords: $("discord-security-words").value,
+          spamLimit: Number($("discord-security-spam").value),
+          raidJoinLimit: Number($("discord-security-raid").value),
+        });
+        if (button) button.disabled = false;
+        setStatus($("discord-security-status"), said(result), !result.ok);
+        if (result.ok) refresh();
+      });
+
+      $("discord-community-form").addEventListener("submit", async event => {
+        event.preventDefault();
+        const button = event.submitter;
+        if (button) button.disabled = true;
+        const result = await api("discord/community", {
+          ticketCategoryId: $("discord-ticket-category").value, ticketStaffRoleId: $("discord-ticket-staff-role").value,
+          welcomeChannelId: $("discord-welcome-channel").value, welcomeMessage: $("discord-welcome-message").value,
+          goodbyeChannelId: $("discord-goodbye-channel").value, goodbyeMessage: $("discord-goodbye-message").value,
+        });
+        if (button) button.disabled = false;
+        setStatus($("discord-community-status"), said(result), !result.ok);
+        if (result.ok) refresh();
+      });
+
+      $("discord-status-form").addEventListener("submit", async event => {
+        event.preventDefault();
+        const button = event.submitter;
+        if (button) button.disabled = true;
+        const result = await api("discord/status", {title: $("discord-status-title").value, note: $("discord-status-note").value});
+        if (button) button.disabled = false;
+        setStatus($("discord-status-card-result"), said(result), !result.ok);
+        if (result.ok && result.data.statusCard) {
+          $("discord-status-title").value = result.data.statusCard.title;
+          $("discord-status-note").value = result.data.statusCard.note;
+        }
+      });
+
+      $("discord-status-publish").addEventListener("click", async () => {
+        const button = $("discord-status-publish");
+        button.disabled = true;
+        const result = await api("discord/status/publish", {});
+        button.disabled = false;
+        setStatus($("discord-status-card-result"), said(result), !result.ok);
+        if (result.ok) refresh();
+      });
 
       const accountState = account => {
         const tags = [];
@@ -3020,6 +3266,12 @@
           }
           if (!$("quick-lock-q").value.trim()) {
             quickLockFind();
+          }
+        }
+        else if (tab === "discord") {
+          result = await api("discord");
+          if (result.ok) {
+            renderDiscord(result.data);
           }
         }
         else if (tab === "accounts") {

@@ -7,6 +7,7 @@ const accounts = require("./lib/accounts.js");
 const bans = require("./lib/bans.js");
 const devices = require("./lib/devices.js");
 const discord = require("./lib/discord.js");
+const discordBot = require("./lib/discordbot.js");
 const chatlog = require("./lib/chatlog.js");
 const modlog = require("./lib/modlog.js");
 const retention = require("./lib/retention.js");
@@ -56,11 +57,13 @@ const main = async () => {
   panel.load();
   await http.start();
   await sfs.start(world);
+  discordBot.startup();
   console.log(`[server] ready at ${config.baseUrl}`);
 };
 
 // stopped on purpose: what is waiting to be written is written first.
 const stop = code => {
+  discordBot.shutdown();
   stats.flush();
   try {
     accounts.flush();

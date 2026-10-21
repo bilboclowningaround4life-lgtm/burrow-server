@@ -4,7 +4,8 @@
 // what the security audit of 2026-10-16 found true of this server, checked on
 // every push so that it stays true (or is changed on purpose):
 //
-//   - it uses no npm packages, so there is no supply chain to break into
+//   - it has only the one pinned Discord gateway dependency needed by the
+//     optional staff bot; additions are refused to keep the supply chain small
 //   - the server code starts no other programs and runs no generated code
 //   - the server code names no web address outside .github/allowed-hosts.json
 //   - no private key, certificate key or .env file is committed
@@ -22,17 +23,35 @@ const tracked = execFileSync("git", ["ls-files", "-z"], {encoding: "utf8"}).spli
 const problems = [];
 const fail = (file, message) => problems.push({file, message});
 
-// no npm packages
+// The server stayed dependency-free until the optional Discord staff bot. Its
+// maintained gateway/components implementation is pinned exactly and captured
+// in package-lock.json; no other package is permitted without deliberately
+// extending this allowlist and its review surface.
 const pkg = JSON.parse(fs.readFileSync("package.json", "utf8"));
+const ALLOWED_DEPENDENCIES = {dependencies: {"discord.js": "14.26.4"}};
 for (const field of ["dependencies", "devDependencies", "optionalDependencies", "peerDependencies", "bundledDependencies"]) {
-  if (pkg[field] && Object.keys(pkg[field]).length) {
-    fail("package.json", `${field} is not empty. The server has no npm packages on purpose; if one is really needed, change this check in the same pull request and say why.`);
+  const actual = pkg[field] || {};
+  const allowedDependencies = ALLOWED_DEPENDENCIES[field] || {};
+  if (JSON.stringify(Object.keys(actual).sort().map(name => [name, actual[name]])) !== JSON.stringify(Object.keys(allowedDependencies).sort().map(name => [name, allowedDependencies[name]]))) {
+    fail("package.json", `${field} differs from its approved dependency allowlist. Keep dependencies empty except for the pinned Discord staff-bot gateway, or deliberately update this check and explain why.`);
   }
 }
-for (const lock of ["package-lock.json", "yarn.lock", "pnpm-lock.yaml"]) {
-  if (tracked.includes(lock)) {
-    fail(lock, "a lockfile means npm packages; see package.json above.");
+for (const lock of ["yarn.lock", "pnpm-lock.yaml"]) {
+  if (tracked.includes(lock)) fail(lock, "use the reviewed package-lock.json; alternate package-manager lockfiles are not allowed.");
+}
+if (fs.existsSync("package-lock.json")) {
+  try {
+    const lock = JSON.parse(fs.readFileSync("package-lock.json", "utf8"));
+    if (lock.lockfileVersion !== 3 || lock.packages?.[""]?.dependencies?.["discord.js"] !== "14.26.4") {
+      fail("package-lock.json", "must be the npm v3 lockfile for the pinned discord.js@14.26.4 dependency.");
+    }
   }
+  catch {
+    fail("package-lock.json", "is not a readable npm lockfile.");
+  }
+}
+else {
+  fail("package-lock.json", "is required to review the pinned Discord bot dependency.");
 }
 
 // the server's own code: what the game server runs
@@ -88,4 +107,4 @@ if (problems.length) {
   }
   process.exit(1);
 }
-console.log(`${serverCode.length} server files and ${tracked.length} tracked files checked: no packages, no program starts or generated code, no unlisted hosts, no keys, everything parses`);
+console.log(`${serverCode.length} server files and ${tracked.length} tracked files checked: only the pinned Discord bot dependency, no program starts or generated code, no unlisted hosts, no keys, everything parses`);
