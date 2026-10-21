@@ -46,6 +46,8 @@ package
    import flash.text.TextField;
    import flash.text.TextFormat;
    import flash.events.UncaughtErrorEvent;
+   import flash.filters.DropShadowFilter;
+   import flash.filters.GlowFilter;
    import flash.external.ExternalInterface;
    import flash.system.Capabilities;
    import flash.system.LoaderContext;
@@ -1103,54 +1105,127 @@ package
          {
             buildTheatreControl();
          }
+         placeTheatreBox();
          _theatreControl.visible = true;
          setChildIndex(_theatreControl,numChildren - 1);
          gMainFrame.stage.focus = _theatreInput;
+         _theatreInput.setSelection(0,_theatreInput.length);
       }
+
+      // the Room Video box over the middle of the theatre's screen, as the
+      // page's Your Video box sits (game.html), or the stage's middle
+      private function placeTheatreBox() : void
+      {
+         var _loc1_:DisplayObject = _theatreControl.getChildByName("box");
+         var _loc2_:Object = RoomManagerWorld.instance != null ? RoomManagerWorld.instance.theaterWindow : null;
+         var _loc3_:DisplayObject = _loc2_ != null && _loc2_.hasOwnProperty("videoLayer") ? _loc2_.videoLayer as DisplayObject : null;
+         var _loc4_:Point = null;
+         var _loc5_:Point = null;
+         _loc1_.x = int((900 - THEATRE_BOX_W) * 0.5);
+         _loc1_.y = int((550 - THEATRE_BOX_H) * 0.5);
+         try
+         {
+            if(_loc3_ != null && shownOnStage(_loc3_))
+            {
+               _loc4_ = _theatreControl.globalToLocal(_loc3_.localToGlobal(new Point(0,0)));
+               _loc5_ = _theatreControl.globalToLocal(_loc3_.localToGlobal(new Point(THEATRE_SCREEN_W,THEATRE_SCREEN_H)));
+               _loc1_.x = int(_loc4_.x + (_loc5_.x - _loc4_.x - THEATRE_BOX_W) * 0.5);
+               _loc1_.y = int(Math.max(4,_loc4_.y + (_loc5_.y - _loc4_.y - THEATRE_BOX_H) * 0.5));
+            }
+         }
+         catch(e:Error)
+         {
+         }
+      }
+
+      // the staff's Room Video box, drawn as the page's Your Video box
+      // (game.html .aj-box): a cream panel with a brown edge, a white title
+      // outlined in brown, a white link box, green and red pill buttons and
+      // a red round close button. behind it the whole stage, unseen, so a
+      // click past it does nothing in the room.
+      private static const THEATRE_BOX_W:int = 360;
+      private static const THEATRE_BOX_H:int = 150;
 
       private function buildTheatreControl() : void
       {
          _theatreControl = new Sprite();
-         _theatreControl.graphics.beginFill(0,0.55);
+         _theatreControl.graphics.beginFill(0,0);
          _theatreControl.graphics.drawRect(0,0,900,550);
          _theatreControl.graphics.endFill();
          var _loc1_:Sprite = new Sprite();
-         _loc1_.x = 225;
-         _loc1_.y = 170;
-         _loc1_.graphics.lineStyle(2,0x7B4D24);
-         _loc1_.graphics.beginFill(0x27221D);
-         _loc1_.graphics.drawRoundRect(0,0,450,210,22,22);
+         _loc1_.name = "box";
+         _loc1_.graphics.beginFill(0,0.35);
+         _loc1_.graphics.drawRoundRect(0,4,THEATRE_BOX_W,THEATRE_BOX_H,36,36);
          _loc1_.graphics.endFill();
+         _loc1_.graphics.lineStyle(4,0x7F6744);
+         _loc1_.graphics.beginFill(0xFFF2C4);
+         _loc1_.graphics.drawRoundRect(0,0,THEATRE_BOX_W,THEATRE_BOX_H,36,36);
+         _loc1_.graphics.endFill();
+         _loc1_.graphics.lineStyle(2,0xFFE39A);
+         _loc1_.graphics.drawRoundRect(3,3,THEATRE_BOX_W - 6,THEATRE_BOX_H - 6,30,30);
          _theatreControl.addChild(_loc1_);
-         theatreCloseButton(_loc1_);
-         var _loc2_:TextField = modText("THEATRE VIDEO",22,0xFFFFFF);
-         _loc2_.x = 24;
-         _loc2_.y = 22;
+         var _loc2_:TextField = modText("Room Video",20,0xFFFFFF);
+         _loc2_.filters = [new GlowFilter(0x6D4330,1,4,4,12)];
+         _loc2_.x = 16;
+         _loc2_.y = 12;
          _loc1_.addChild(_loc2_);
-         var _loc3_:TextField = modText("Paste a YouTube link. Everyone in this theatre will see it.",12,0xD5C5AE,false);
-         _loc3_.x = 24;
-         _loc3_.y = 58;
+         var _loc3_:TextField = modText("Everyone in this theatre sees it.",12,0x8A6A45,false);
+         _loc3_.x = 17;
+         _loc3_.y = 41;
          _loc1_.addChild(_loc3_);
          var _loc4_:Sprite = new Sprite();
-         _loc4_.x = 24;
-         _loc4_.y = 94;
-         _loc4_.graphics.lineStyle(1,0x7B4D24);
-         _loc4_.graphics.beginFill(0x111111);
-         _loc4_.graphics.drawRoundRect(0,0,402,34,10,10);
+         _loc4_.x = 16;
+         _loc4_.y = 62;
+         _loc4_.graphics.lineStyle(2,0xC9A86A);
+         _loc4_.graphics.beginFill(0xFFFFFF);
+         _loc4_.graphics.drawRoundRect(0,0,THEATRE_BOX_W - 32,30,18,18);
          _loc4_.graphics.endFill();
          _loc1_.addChild(_loc4_);
+         var _loc5_:TextField = new TextField();
+         _loc5_.selectable = false;
+         _loc5_.mouseEnabled = false;
+         _loc5_.defaultTextFormat = new TextFormat("Arial",13,0xA88F6A);
+         _loc5_.text = "Paste a YouTube link";
+         _loc5_.x = 9;
+         _loc5_.y = 6;
+         _loc5_.width = THEATRE_BOX_W - 50;
+         _loc5_.height = 20;
+         _loc4_.addChild(_loc5_);
          _theatreInput = new TextField();
          _theatreInput.type = "input";
-         _theatreInput.embedFonts = hasGameFont();
-         _theatreInput.defaultTextFormat = new TextFormat("CCDigitalDelivery",13,0xFFFFFF,false);
+         _theatreInput.defaultTextFormat = new TextFormat("Arial",13,0x3D2716);
          _theatreInput.maxChars = 200;
-         _theatreInput.x = 10;
-         _theatreInput.y = 7;
-         _theatreInput.width = 382;
-         _theatreInput.height = 22;
+         _theatreInput.x = 9;
+         _theatreInput.y = 6;
+         _theatreInput.width = THEATRE_BOX_W - 50;
+         _theatreInput.height = 20;
          _loc4_.addChild(_theatreInput);
-         theatreControlButton(_loc1_,"play","Play for room",24,150,186,0x357A45);
-         theatreControlButton(_loc1_,"stop","Stop video",240,150,186,0x8E3D3D);
+         _theatreInput.addEventListener("change",function(param1:Event):void
+         {
+            _loc5_.visible = _theatreInput.length == 0;
+         });
+         _theatreInput.addEventListener("keyDown",onTheatreKey,false,0,true);
+         theatreControlButton(_loc1_,"play","Play for room",55,104,150,0xA6E05A,0x4FA52F,0x2F7420);
+         theatreControlButton(_loc1_,"stop","Stop",215,104,90,0xF59A6A,0xD4482A,0x8E2B16);
+         var _loc6_:Sprite = new Sprite();
+         _loc6_.buttonMode = true;
+         _loc6_.useHandCursor = true;
+         _loc6_.graphics.beginFill(0x7F6744);
+         _loc6_.graphics.drawCircle(0,0,17);
+         _loc6_.graphics.beginFill(0xFFFFFF);
+         _loc6_.graphics.drawCircle(0,0,15);
+         _loc6_.graphics.beginFill(0xD9452A);
+         _loc6_.graphics.drawCircle(0,0,12);
+         _loc6_.graphics.endFill();
+         _loc6_.graphics.lineStyle(2.5,0xFFFFFF);
+         _loc6_.graphics.moveTo(-4.5,-4.5);
+         _loc6_.graphics.lineTo(4.5,4.5);
+         _loc6_.graphics.moveTo(4.5,-4.5);
+         _loc6_.graphics.lineTo(-4.5,4.5);
+         _loc6_.x = THEATRE_BOX_W - 5;
+         _loc6_.y = 5;
+         _loc6_.addEventListener("mouseDown",onTheatreClose,false,0,true);
+         _loc1_.addChild(_loc6_);
          _theatreControl.addEventListener("mouseDown",onFinderMouse);
          _theatreControl.addEventListener("mouseUp",onFinderMouse);
          _theatreControl.addEventListener("click",onFinderMouse);
@@ -1158,33 +1233,68 @@ package
          addChild(_theatreControl);
       }
 
-      private function theatreControlButton(param1:Sprite, param2:String, param3:String, param4:Number, param5:Number, param6:Number, param7:uint) : void
+      // a pill button of the page's .aj-button: a gradient from `param6` to
+      // `param7` with a `param8` edge and a step of it underneath
+      private function theatreControlButton(param1:Sprite, param2:String, param3:String, param4:Number, param5:Number, param6:Number, param7:uint, param8:uint, param9:uint) : void
       {
          var _loc1_:Sprite = new Sprite();
+         var _loc2_:Matrix = new Matrix();
          _loc1_.name = param2;
          _loc1_.x = param4;
          _loc1_.y = param5;
          _loc1_.buttonMode = true;
+         _loc1_.useHandCursor = true;
          _loc1_.mouseChildren = false;
-         paintFlatButton(_loc1_,param6,param7);
-         var _loc2_:TextField = modText(param3,14,0xFFFFFF);
-         _loc2_.name = "label";
-         _loc1_.addChild(_loc2_);
-         paintFlatButton(_loc1_,param6,param7);
+         _loc2_.createGradientBox(param6,32,Math.PI / 2);
+         _loc1_.graphics.beginFill(param9);
+         _loc1_.graphics.drawRoundRect(0,2,param6,32,32,32);
+         _loc1_.graphics.endFill();
+         _loc1_.graphics.lineStyle(2,param9);
+         _loc1_.graphics.beginGradientFill("linear",[param7,param8],[1,1],[0,255],_loc2_);
+         _loc1_.graphics.drawRoundRect(0,0,param6,32,32,32);
+         _loc1_.graphics.endFill();
+         _loc1_.graphics.lineStyle(2,0xFFFFFF,0.45);
+         _loc1_.graphics.moveTo(14,3);
+         _loc1_.graphics.lineTo(param6 - 14,3);
+         var _loc3_:TextField = modText(param3,15,0xFFFFFF);
+         _loc3_.filters = [new DropShadowFilter(1.5,90,0,0.45,0,0,1)];
+         _loc3_.x = int((param6 - _loc3_.width) * 0.5);
+         _loc3_.y = int((32 - _loc3_.height) * 0.5);
+         _loc1_.addChild(_loc3_);
          _loc1_.addEventListener("mouseDown",onTheatreControl,false,0,true);
+         _loc1_.addEventListener("mouseOver",onFlatHover);
+         _loc1_.addEventListener("mouseOut",onFlatHover);
          param1.addChild(_loc1_);
+      }
+
+      // Enter plays, Escape closes, as in the page's box
+      private function onTheatreKey(param1:KeyboardEvent) : void
+      {
+         if(param1.keyCode == 13)
+         {
+            sendTheatreVideo("play");
+         }
+         else if(param1.keyCode == 27)
+         {
+            _theatreControl.visible = false;
+            gMainFrame.stage.focus = null;
+         }
       }
 
       private function onTheatreControl(param1:MouseEvent) : void
       {
          param1.stopPropagation();
-         var _loc1_:String = Sprite(param1.currentTarget).name;
-         if(_loc1 == "play" && _theatreInput.text.replace(/^\s+|\s+$/g,"").length == 0)
+         sendTheatreVideo(Sprite(param1.currentTarget).name);
+      }
+
+      private function sendTheatreVideo(param1:String) : void
+      {
+         if(param1 == "play" && _theatreInput.text.replace(/^\s+|\s+$/g,"").length == 0)
          {
             gMainFrame.stage.focus = _theatreInput;
             return;
          }
-         gMainFrame.server.setXtObject_Str("xtv",[_loc1,_loc1 == "play" ? _theatreInput.text.split("%").join("") : ""]);
+         gMainFrame.server.setXtObject_Str("xtv",[param1,param1 == "play" ? _theatreInput.text.split("%").join("") : ""]);
          _theatreControl.visible = false;
          gMainFrame.stage.focus = null;
       }
