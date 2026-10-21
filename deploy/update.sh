@@ -47,6 +47,17 @@ for file in $(git diff --name-only "$old" "$new" -- '*.js'); do
   fi
 done
 
+# the npm packages (only discord.js, for the optional Discord bot): installed
+# again when the lockfile changed, or when they never were. a failed install
+# leaves the bot off; the game itself needs none of them.
+if [ -f "$dir/package-lock.json" ] && { ! git diff --quiet "$old" "$new" -- package-lock.json || [ ! -d "$dir/node_modules" ]; }; then
+  if command -v npm >/dev/null && runuser -u "$user" -- npm --prefix "$dir" ci --omit=dev --no-audit --no-fund; then
+    echo "npm packages installed"
+  else
+    echo "npm packages could not be installed; the Discord bot stays off" >&2
+  fi
+fi
+
 # public/ is read from disk on every request; the rest is loaded once, at start.
 # the list is taken whole first: piped straight into grep -q, a long one (a
 # push of many files) had git cut off mid-write ("Broken pipe"), which
