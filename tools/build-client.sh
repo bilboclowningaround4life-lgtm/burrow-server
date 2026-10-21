@@ -65,6 +65,7 @@ set -- \
   gui.TradeManager TradeManager.as \
   avatar.AvatarView AvatarView.as \
   avatar.AvatarWorldView AvatarWorldView.as \
+  localization.LocalizationManager LocalizationManager.as \
   room.RoomManagerWorld RoomManagerWorld.as \
   gskinner.motion.GTween GTween.as \
   playerWall.PostMessage PostMessage.as \

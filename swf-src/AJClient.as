@@ -2231,7 +2231,7 @@ package
       // what the player is to see of something another player wrote: the
       // text as it was, the text with stars over the filtered words, or
       // null when it is to be left out altogether.
-      public static function filterText(param1:String) : String
+      public static function filterText(param1:String, param2:Boolean = false) : String
       {
          var _loc2_:Array = _filterOwnEntries;
          var _loc3_:Array = [];
@@ -2301,7 +2301,14 @@ package
          {
             return param1;
          }
-         return filterMode == 1 ? null : _loc12_.join("");
+         return filterMode == 1 && !param2 ? null : _loc12_.join("");
+      }
+
+      // an animal's or a pet's typed name: a name cannot be left out, so its
+      // filtered words are starred whichever the player chose.
+      public static function filterName(param1:String) : String
+      {
+         return filterText(param1,true);
       }
       
       // the same for text that has a place of its own (a Jam-A-Gram, a wall
