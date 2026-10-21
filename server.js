@@ -8,6 +8,7 @@ const bans = require("./lib/bans.js");
 const devices = require("./lib/devices.js");
 const discord = require("./lib/discord.js");
 const discordBot = require("./lib/discordbot.js");
+const roles = require("./lib/roles.js");
 const chatlog = require("./lib/chatlog.js");
 const modlog = require("./lib/modlog.js");
 const retention = require("./lib/retention.js");
@@ -54,6 +55,7 @@ const main = async () => {
   masterpieces.load();
   retention.load();
   stats.load(() => world.players().length);
+  roles.load();
   panel.load();
   await http.start();
   await sfs.start(world);

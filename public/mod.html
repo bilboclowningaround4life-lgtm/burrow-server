@@ -2057,8 +2057,8 @@
       // card, their name opens it)
       const paintingButtons = (painting, withPlayer) => {
         const buttons = el("div", undefined, "buttons");
-        // judging paintings is for the roles that judge what players make
-        if (permissions.has("items.approve")) {
+        // judging paintings is for the roles that may (masterpieces.approve)
+        if (permissions.has("masterpieces.approve")) {
           buttons.append(...(painting.status === "waiting" ? [button("Approve", () => judge(painting, true), "primary")] : []),
             button("Reject", () => judge(painting, false), "danger"));
         }
@@ -3136,7 +3136,7 @@
           sub.hidden = !allowed.has(sub.dataset.needs);
         }
         // a role that does not judge paintings has approved none of them
-        $("recent-mine").closest("label").hidden = !allowed.has("items.approve");
+        $("recent-mine").closest("label").hidden = !allowed.has("masterpieces.approve");
         // the pages the role may see; the first of them when the one open is not.
         const pages = [...document.querySelectorAll("nav button")];
         for (const page of pages) {
