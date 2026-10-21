@@ -3,12 +3,14 @@
     "ajcontent.akamaized.net",
     "burrow.moe",
     "cdn.jsdelivr.net",
-    "discord.com",
     "challenges.cloudflare.com",
+    "discord.com",
     "play.burrow.moe",
+    "player.vimeo.com",
     "vision.googleapis.com",
     "www.cloudflare.com",
-    "www.w3.org"
+    "www.w3.org",
+    "www.youtube-nocookie.com"
   ],
   "swf": [
     "academy.animaljam.com",
