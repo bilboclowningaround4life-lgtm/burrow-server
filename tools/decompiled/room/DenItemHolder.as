@@ -22,6 +22,8 @@ package room
    import flash.geom.Matrix;
    import flash.geom.Point;
    import flash.geom.Rectangle;
+   import flash.text.TextField;
+   import flash.text.TextFormat;
    import flash.utils.Dictionary;
    import game.MinigameManager;
    import gui.AvatarEditor;
@@ -64,6 +66,15 @@ package room
       private var _flipBtnVer:MovieClip;
       
       private var _linkBtn:MovieClip;
+
+      // These are deliberately part of the selected item's action cluster,
+      // not the den editor chrome.  That keeps them out of the way of the
+      // inventory and makes their scope obvious, as in the original editor.
+      private var _sendBehindBtn:Sprite;
+
+      private var _bringToFrontBtn:Sprite;
+
+      private var _naturalDepthBtn:Sprite;
       
       private var _themePos:Point;
       
@@ -102,6 +113,9 @@ package room
          _flipBtnVer.addEventListener("mouseDown",onFlipBtn,false,0,true);
          _linkBtn = GETDEFINITIONBYNAME("portalLinkBtnCont");
          _linkBtn.addEventListener("mouseDown",onLinkBtn,false,0,true);
+         _sendBehindBtn = makeLayerButton("Back",onSendBehindBtn);
+         _bringToFrontBtn = makeLayerButton("Front",onBringToFrontBtn);
+         _naturalDepthBtn = makeLayerButton("Auto",onNaturalDepthBtn);
          release();
          _lastItemInvId = -1;
       }
@@ -149,10 +163,9 @@ package room
          return _dragItem != null;
       }
 
-      // The original editor only sorted furniture from its y position.  These
-      // helpers give the replacement editor an explicit, persisted choice.
-      // Bits 2-3 of `flipped` are unused by the game's flip code, so the
-      // normal horizontal/vertical flip bits remain intact in bits 0-1.
+      // The original editor only sorted furniture from its y position.  Bits
+      // 2-3 of `flipped` are unused by the game's flip code, so they safely
+      // persist a selected item's deliberate stacking choice.
       public function sendSelectedBehind() : Boolean
       {
          return setSelectedStacking(1);
@@ -170,7 +183,7 @@ package room
 
       private function setSelectedStacking(param1:int) : Boolean
       {
-         if(_dragItem == null || _dragItem.layerId == 1 || isTheme(_dragItem.sortCatId) || _dragItem.sortCatId == 4)
+         if(!canSetSelectedStacking())
          {
             return false;
          }
@@ -178,9 +191,65 @@ package room
          if(_dragItem.denItemHelper && _dragItem.denItemHelper.displayObject)
          {
             _dragItem.denItemHelper.displayObject.name = String(_dragItem.denItemHelper.sortOffset);
+            // SortLayer will settle on the saved offset at its next heartbeat;
+            // set the visible order now so the control feels immediate.
+            if(param1 == 1)
+            {
+               _dragItem.denItemHelper.displayObject.parent.setChildIndex(_dragItem.denItemHelper.displayObject,0);
+            }
+            else if(param1 == 2)
+            {
+               _dragItem.denItemHelper.displayObject.parent.setChildIndex(_dragItem.denItemHelper.displayObject,_dragItem.denItemHelper.displayObject.parent.numChildren - 1);
+            }
          }
          saveState(_dragItem.invIdx);
          return true;
+      }
+
+      private function canSetSelectedStacking() : Boolean
+      {
+         return _roomMode == 1 && _dragItem != null && _dragItem.layerId != 1 && !isTheme(_dragItem.sortCatId) && _dragItem.sortCatId != 4;
+      }
+
+      private function makeLayerButton(param1:String, param2:Function) : Sprite
+      {
+         var _loc3_:Sprite = new Sprite();
+         var _loc4_:TextField = new TextField();
+         _loc3_.buttonMode = true;
+         _loc3_.mouseChildren = false;
+         _loc3_.graphics.beginFill(2398294,0.96);
+         _loc3_.graphics.drawRoundRect(0,0,42,24,8,8);
+         _loc3_.graphics.endFill();
+         _loc3_.graphics.lineStyle(1,16774041,0.9);
+         _loc3_.graphics.drawRoundRect(0,0,42,24,8,8);
+         _loc4_.width = 42;
+         _loc4_.height = 20;
+         _loc4_.y = 3;
+         _loc4_.selectable = false;
+         _loc4_.mouseEnabled = false;
+         _loc4_.defaultTextFormat = new TextFormat("Arial",9,16777215,true,null,null,null,null,"center");
+         _loc4_.text = param1;
+         _loc3_.addChild(_loc4_);
+         _loc3_.addEventListener("mouseDown",param2,false,0,true);
+         return _loc3_;
+      }
+
+      private function onSendBehindBtn(param1:MouseEvent) : void
+      {
+         param1.stopImmediatePropagation();
+         sendSelectedBehind();
+      }
+
+      private function onBringToFrontBtn(param1:MouseEvent) : void
+      {
+         param1.stopImmediatePropagation();
+         bringSelectedToFront();
+      }
+
+      private function onNaturalDepthBtn(param1:MouseEvent) : void
+      {
+         param1.stopImmediatePropagation();
+         resetSelectedStacking();
       }
       
       public function get lastSelectedItem() : DenStateItem
@@ -618,6 +687,7 @@ package room
          {
             _linkBtn.parent.removeChild(_linkBtn);
          }
+         removeLayerButtons();
          if(_itemFilter)
          {
             if(_itemFilter.denItemHelper.displayObject)
@@ -664,6 +734,13 @@ package room
          }
          else
          {
+            // The room treats a mouse-up over empty space as a deselect.  The
+            // selected item's action cluster lives in that empty space, so
+            // keep the selection while the pointer crosses into its buttons.
+            if(_dragItem && isOverLayerActionArea(param1,param2))
+            {
+               return;
+            }
             if(_dragItem && _dragItem.specialType == 1)
             {
                _loc6_ = hitTest(param1,param2);
@@ -976,6 +1053,7 @@ package room
                   BuddyList.closeWorldBuddyList();
                }
             }
+            updateLayerButtons();
             if(_itemFilter != _dragItem)
             {
                if(_itemFilter)
@@ -1005,6 +1083,7 @@ package room
                _linkBtn.parent.removeChild(_linkBtn);
                BuddyList.closeWorldBuddyList();
             }
+            removeLayerButtons();
             if(_itemFilter)
             {
                if(_itemFilter.denItemHelper.displayObject)
@@ -1026,7 +1105,57 @@ package room
          _flipBtnVer.y = param2 + 90;
          _linkBtn.x = param1 + 15;
          _linkBtn.y = param2 + 125;
+         _sendBehindBtn.x = param1 + 42;
+         _sendBehindBtn.y = param2;
+         _bringToFrontBtn.x = param1 + 42;
+         _bringToFrontBtn.y = param2 + 27;
+         _naturalDepthBtn.x = param1 + 42;
+         _naturalDepthBtn.y = param2 + 54;
          BuddyList.updateWorldBuddyListPosition(_linkBtn);
+      }
+
+      private function updateLayerButtons() : void
+      {
+         if(!canSetSelectedStacking())
+         {
+            removeLayerButtons();
+            return;
+         }
+         if(_sendBehindBtn.parent != _layerManager.room_chat)
+         {
+            _layerManager.room_chat.addChild(_sendBehindBtn);
+            _layerManager.room_chat.addChild(_bringToFrontBtn);
+            _layerManager.room_chat.addChild(_naturalDepthBtn);
+         }
+      }
+
+      private function removeLayerButtons() : void
+      {
+         if(_sendBehindBtn.parent)
+         {
+            _sendBehindBtn.parent.removeChild(_sendBehindBtn);
+         }
+         if(_bringToFrontBtn.parent)
+         {
+            _bringToFrontBtn.parent.removeChild(_bringToFrontBtn);
+         }
+         if(_naturalDepthBtn.parent)
+         {
+            _naturalDepthBtn.parent.removeChild(_naturalDepthBtn);
+         }
+      }
+
+      private function isOverLayerActionArea(param1:Number, param2:Number) : Boolean
+      {
+         var _loc3_:Rectangle = null;
+         if(_sendBehindBtn.parent == null)
+         {
+            return false;
+         }
+         // Treat the item and its controls as one continuous selection area.
+         // This bridges any empty pixels between a large item and its buttons.
+         _loc3_ = _dragItem.denItemHelper.displayObject.getBounds(_layerManager.room_avatars);
+         return param1 >= Math.min(_loc3_.left,_sendBehindBtn.x) - 12 && param1 <= Math.max(_loc3_.right,_sendBehindBtn.x + _sendBehindBtn.width) + 12 && param2 >= Math.min(_loc3_.top,_sendBehindBtn.y) - 12 && param2 <= Math.max(_loc3_.bottom,_naturalDepthBtn.y + _naturalDepthBtn.height) + 12;
       }
       
       private function onCloseBtn(param1:Event) : void

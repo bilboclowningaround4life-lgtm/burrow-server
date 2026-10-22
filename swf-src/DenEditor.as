@@ -15,13 +15,10 @@ package gui
    import den.DenStateItem;
    import den.DenXtCommManager;
    import flash.display.MovieClip;
-   import flash.display.Sprite;
    import flash.events.Event;
    import flash.events.MouseEvent;
    import flash.events.TimerEvent;
    import flash.geom.Point;
-   import flash.text.TextField;
-   import flash.text.TextFormat;
    import flash.utils.Timer;
    import gui.itemWindows.ItemWindowOriginal;
    import localization.LocalizationManager;
@@ -142,8 +139,6 @@ package gui
       private var _privacyId:int;
       
       private var _itemSetEvent:DenItemHolderEvent;
-
-      private var _layerControls:Sprite;
       
       public function DenEditor()
       {
@@ -162,7 +157,6 @@ package gui
          _roomMgr = RoomManagerWorld.instance;
          _denItemHolder = _roomMgr.denItemHolder;
          _guiLayer.addChild(_denEditor);
-         createLayerControls();
          initAssetVisibility();
          setupPlayerItems();
          DenXtCommManager.denEditorDIResponseCallback = diResponseCallback;
@@ -176,7 +170,6 @@ package gui
          _denItemHolder.removeEventListener("OnItemRemoved",onDenItemRemoved);
          _denItemHolder.removeEventListener("OnSaveState",onDenSaveState);
          removeListeners();
-         destroyLayerControls();
          _guiLayer.removeChild(_denEditor);
          if(_denLockPopup)
          {
@@ -1203,76 +1196,6 @@ package gui
          _roomMgr.spawnNewDenItem(_loc3_);
       }
 
-      // Small controls added at runtime so every den item can be stacked
-      // deliberately, instead of relying solely on where its feet land.
-      private function createLayerControls() : void
-      {
-         _layerControls = new Sprite();
-         _layerControls.x = _denEditor.width - 258;
-         _layerControls.y = 12;
-         _layerControls.addChild(makeLayerLabel("Selected item layer",0,0,230,22,13,16774041));
-         addLayerButton("Send behind",0,onSendBehind);
-         addLayerButton("Bring on top",116,onBringOnTop);
-         addLayerButton("Use natural depth",0,onResetLayer,62,230,30);
-         _denEditor.addChild(_layerControls);
-      }
-
-      private function addLayerButton(param1:String, param2:Number, param3:Function, param4:Number = 26, param5:Number = 110, param6:Number = 30) : void
-      {
-         var _loc6_:Sprite = new Sprite();
-         _loc6_.x = param2;
-         _loc6_.y = param4;
-         _loc6_.buttonMode = true;
-         _loc6_.mouseChildren = false;
-         _loc6_.graphics.beginFill(5986842,0.96);
-         _loc6_.graphics.drawRoundRect(0,0,param5,param6,8,8);
-         _loc6_.graphics.endFill();
-         _loc6_.addChild(makeLayerLabel(param1,0,5,param5,param6 - 5,12,16777215));
-         _loc6_.addEventListener("mouseDown",param3,false,0,true);
-         _layerControls.addChild(_loc6_);
-      }
-
-      private function makeLayerLabel(param1:String, param2:Number, param3:Number, param4:Number, param5:Number, param6:int, param7:uint) : TextField
-      {
-         var _loc8_:TextField = new TextField();
-         _loc8_.x = param2;
-         _loc8_.y = param3;
-         _loc8_.width = param4;
-         _loc8_.height = param5;
-         _loc8_.selectable = false;
-         _loc8_.mouseEnabled = false;
-         _loc8_.defaultTextFormat = new TextFormat("Arial",param6,param7,true,null,null,null,null,"center");
-         _loc8_.text = param1;
-         return _loc8_;
-      }
-
-      private function onSendBehind(param1:MouseEvent) : void
-      {
-         param1.stopImmediatePropagation();
-         _denItemHolder.sendSelectedBehind();
-      }
-
-      private function onBringOnTop(param1:MouseEvent) : void
-      {
-         param1.stopImmediatePropagation();
-         _denItemHolder.bringSelectedToFront();
-      }
-
-      private function onResetLayer(param1:MouseEvent) : void
-      {
-         param1.stopImmediatePropagation();
-         _denItemHolder.resetSelectedStacking();
-      }
-
-      private function destroyLayerControls() : void
-      {
-         if(_layerControls && _layerControls.parent)
-         {
-            _layerControls.parent.removeChild(_layerControls);
-         }
-         _layerControls = null;
-      }
-      
       private function onClose(param1:MouseEvent) : void
       {
          SBTracker.pop();
