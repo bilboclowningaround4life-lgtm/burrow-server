@@ -392,6 +392,12 @@
         </div>
         <button class="primary" id="gate-button">Sign in</button>
       </form>
+      <form id="discord-code-form" hidden>
+        <p class="hint">Discord confirmed who you are. Enter that account's 2FA code to finish signing in.</p>
+        <label for="discord-code">2FA code</label>
+        <input id="discord-code" inputmode="numeric" autocomplete="one-time-code" maxlength="20" spellcheck="false" required>
+        <button class="primary" id="discord-code-button">Finish signing in</button>
+      </form>
       <button type="button" id="discord-sign-in" hidden>Sign in with Discord</button>
       <p class="hint" id="discord-gate-hint" hidden>Only Discord accounts explicitly allowed by the owner can use this.</p>
       <p class="status" id="gate-status" role="status"></p>
@@ -1259,6 +1265,38 @@
       });
       $("discord-sign-in").addEventListener("click", () => {
         location.href = "/dashboard/admin/discord/login";
+      });
+
+      // after Discord: the linked account's 2FA code (POST discord/code)
+      const discordGate = (codeStep, message) => {
+        history.replaceState(null, "", location.pathname + location.hash);
+        showGate(message);
+        $("gate-form").hidden = codeStep;
+        $("discord-code-form").hidden = !codeStep;
+        if (codeStep) {
+          $("discord-sign-in").textContent = "Start again with Discord";
+          $("discord-code").focus();
+        }
+      };
+
+      $("discord-code-form").addEventListener("submit", async event => {
+        event.preventDefault();
+        $("discord-code-button").disabled = true;
+        const result = await api("discord/code", {code: $("discord-code").value.trim()});
+        $("discord-code-button").disabled = false;
+        $("discord-code").value = "";
+        if (result.ok) {
+          $("discord-code-form").hidden = true;
+          $("gate-form").hidden = false;
+          state = {needsSetup: false, needsSetupCode: false, signedIn: true};
+          showPanel();
+        }
+        else if (result.data.expired) {
+          discordGate(false, result.data.error);
+        }
+        else {
+          setStatus($("gate-status"), result.data.error || "That did not work.", true);
+        }
       });
 
       $("sign-out").addEventListener("click", async () => {
@@ -3514,8 +3552,22 @@
           showGate("The server did not answer.");
           return;
         }
+        const discordResult = new URLSearchParams(location.search).get("discord");
         if (state.signedIn) {
           showPanel();
+        }
+        else if (discordResult === "code") {
+          discordGate(true, "");
+        }
+        else if (discordResult) {
+          discordGate(false, {
+            denied: "That Discord account is not allowed to sign in here.",
+            twostep: "Turn on 2FA for the linked account first.",
+            expired: "The Discord sign-in request expired. Try again.",
+            cancelled: "Discord sign-in was cancelled.",
+            discord: "Discord could not confirm that sign-in. Try again.",
+            off: "Discord sign-in is not configured.",
+          }[discordResult] || "");
         }
         else {
           showGate();

@@ -454,6 +454,12 @@
         <div id="captcha"></div>
         <button class="primary" id="gate-button">Sign in</button>
       </form>
+      <form id="discord-code-form" hidden>
+        <p class="hint">Discord confirmed who you are. Enter your 2FA code to finish signing in.</p>
+        <label for="discord-code">2FA code</label>
+        <input id="discord-code" inputmode="numeric" autocomplete="one-time-code" maxlength="20" spellcheck="false" required>
+        <button class="primary" id="discord-code-button">Finish signing in</button>
+      </form>
       <button type="button" id="discord-sign-in" hidden>Sign in with Discord</button>
       <p class="hint" id="discord-gate-hint" hidden>Use the Discord account linked to your active staff account.</p>
       <p class="status" id="gate-status" role="status"></p>
@@ -3195,6 +3201,38 @@
         location.href = "/dashboard/staff/discord/login";
       });
 
+      // after Discord: the 2FA code, which opens the panel (POST discord/code)
+      const showDiscordCode = message => {
+        showGate(message);
+        $("gate-form").hidden = true;
+        $("discord-code-form").hidden = false;
+        $("discord-sign-in").textContent = "Start again with Discord";
+        $("discord-code").focus();
+      };
+
+      $("discord-code-form").addEventListener("submit", async event => {
+        event.preventDefault();
+        $("discord-code-button").disabled = true;
+        const result = await api("discord/code", {code: $("discord-code").value.trim()});
+        $("discord-code-button").disabled = false;
+        $("discord-code").value = "";
+        if (result.ok) {
+          history.replaceState(null, "", location.pathname + location.hash);
+          $("discord-code-form").hidden = true;
+          $("gate-form").hidden = false;
+          showPanel(result.data.username);
+        }
+        else if (result.data.expired) {
+          history.replaceState(null, "", location.pathname + location.hash);
+          $("discord-code-form").hidden = true;
+          $("gate-form").hidden = false;
+          showGate(said(result));
+        }
+        else {
+          setStatus($("gate-status"), said(result), true);
+        }
+      });
+
       $("sign-out").addEventListener("click", async () => {
         await api("logout", {});
         showGate("");
@@ -3215,7 +3253,12 @@
             discord: "Discord could not confirm that sign-in. Try again.",
             off: "Discord sign-in is not configured.",
           }[discordResult] || "";
-          showGate(result.status === 0 ? result.data.error : discordMessage);
+          if (discordResult === "code" && result.status !== 0) {
+            showDiscordCode("");
+          }
+          else {
+            showGate(result.status === 0 ? result.data.error : discordMessage);
+          }
         }
       };
 
