@@ -1,5 +1,6 @@
 package
 {
+   import achievement.AchievementXtCommManager;
    import avatar.AvatarManager;
    import avatar.AvatarWorldView;
    import buddy.Buddy;
@@ -1837,6 +1838,8 @@ package
       //         profile changes only optional rendering work, never the
       //         game's native 24 FPS (which would slow its animations).
       //   9008  Play as your pet (gui.PetInventory, lib/pets.js): 1 on.
+      //   9009  Expanded Inventory (expandedInventoryOn): 1 on.
+      //   9010  Items a row with it on: 3, 4 or 5; unset is 5.
       
       
       private static var _smoothTimer:Timer;
@@ -2067,6 +2070,33 @@ package
       public static function wasdOn() : Boolean
       {
          return gMainFrame.userInfo.userVarCache.getUserVarValueById(9002) == 1;
+      }
+
+      // "Expanded Inventory" (Strawberry Jam's): the clothes and item
+      // pickers show more, smaller items a row. user var 9009, 1 on; the
+      // + and - by the avatar editor's item counter pick 3, 4 or 5 a row,
+      // user var 9010 (unset is 5, the widest, so turning it on shows).
+      public static function expandedInventoryOn() : Boolean
+      {
+         return settingOf(9009) == 1;
+      }
+
+      public static function inventoryColumns() : int
+      {
+         var _loc1_:int = settingOf(9010);
+         if(!expandedInventoryOn())
+         {
+            return 3;
+         }
+         return _loc1_ >= 3 && _loc1_ <= 5 ? _loc1_ : 5;
+      }
+
+      // the next of 3, 4 and 5 a row, round about; param1 is 1 or -1.
+      public static function stepInventoryColumns(param1:int) : void
+      {
+         var _loc2_:int = (inventoryColumns() - 3 + param1 + 3) % 3 + 3;
+         gMainFrame.userInfo.userVarCache.updateUserVar(9010,_loc2_);
+         AchievementXtCommManager.requestSetUserVar(9010,_loc2_);
       }
       
       // the arrow key a key stands for: itself, or with the setting on and

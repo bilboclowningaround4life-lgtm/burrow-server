@@ -61,7 +61,11 @@ package gui.itemWindows
       private var _hasSetState:Boolean;
       
       private var _isSellShop:Boolean;
-      
+
+      // smaller with Expanded Inventory on (AJClient.inventoryColumns): 3
+      // over the items a row, so a row is as wide as the game's three.
+      private var _itemScale:Number = 1;
+
       public function ItemWindowOriginal(param1:Function, param2:Object, param3:String, param4:int, param5:Function = null, param6:Function = null, param7:Function = null, param8:Function = null, param9:Object = null)
       {
          var _loc11_:int = 0;
@@ -88,6 +92,10 @@ package gui.itemWindows
             {
                _loc11_ = int(param9.indexArray.length);
                _loc10_ = int(_loc11_ - 1 >= param4 ? param9.indexArray[param4] : param4);
+            }
+            if(param9.itemScale > 0)
+            {
+               _itemScale = param9.itemScale;
             }
          }
          super("itemWindow",param1,param2,param3,_loc10_,param5,param6,param7,param8,true);
@@ -576,6 +584,19 @@ package gui.itemWindows
       
       override protected function onWindowLoadCallback() : void
       {
+         // the generator spaces the windows by their width and height,
+         // which are sizeCont's (ItemWindowBase) and do not shrink with the
+         // window, so sizeCont is made as much smaller.
+         if(_itemScale != 1 && _window)
+         {
+            if(_window.hasOwnProperty("sizeCont") && _window.sizeCont)
+            {
+               _window.sizeCont.width *= _itemScale;
+               _window.sizeCont.height *= _itemScale;
+            }
+            this.scaleX = _itemScale;
+            this.scaleY = _itemScale;
+         }
          if(_windowLoadedCallback != null)
          {
             resetVisibility();

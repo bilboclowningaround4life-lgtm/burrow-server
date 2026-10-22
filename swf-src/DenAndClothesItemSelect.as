@@ -438,6 +438,7 @@ package gui
          var _loc6_:int = 0;
          var _loc9_:int = 0;
          var _loc7_:int = 0;
+         var _loc17_:int = 0;
          while(_popup.itemBlock.numChildren > 1)
          {
             _popup.itemBlock.removeChildAt(_popup.itemBlock.numChildren - 1);
@@ -627,7 +628,9 @@ package gui
                _itemDenWindows = _currItemWindow;
             }
             _popup.searchBar.mouse.searchTxt.text = "";
-            _currItemWindow.init(_popup.itemBlock.width,_popup.itemBlock.height,2,_loc11_,3,4,12,2,2,0,2 * 0.5,ItemWindowOriginal,_loc3_,"icon",0,{
+            // Expanded Inventory: more, smaller items a row (AJClient.inventoryColumns)
+            _loc17_ = AJClient.inventoryColumns();
+            _currItemWindow.init(_popup.itemBlock.width,_popup.itemBlock.height,2,_loc11_,_loc17_,4,_loc17_ * 4,2,2,0,2 * 0.5,ItemWindowOriginal,_loc3_,"icon",0,{
                "mouseDown":winMouseDown,
                "mouseOver":winMouseOver,
                "mouseOut":winMouseOut
@@ -635,7 +638,8 @@ package gui
                "giftItemIdx":_giftItemIdx,
                "isECard":_type == 1,
                "isChoosingForTradeList":_type == 0 || _type == 3,
-               "indexArray":_loc5_
+               "indexArray":_loc5_,
+               "itemScale":3 / _loc17_
             },onListLoaded);
          }
          else

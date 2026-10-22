@@ -38,6 +38,8 @@ package gui
    import flash.events.MouseEvent;
    import flash.geom.Matrix;
    import flash.geom.Point;
+   import flash.text.TextField;
+   import flash.text.TextFormat;
    import gui.itemWindows.ItemWindowNameBarIcon;
    import gui.itemWindows.ItemWindowOriginal;
    import inventory.Iitem;
@@ -242,6 +244,10 @@ package gui
       private var _itemClothingWindows:WindowAndScrollbarGenerator;
       
       private var _itemTradeWindows:WindowAndScrollbarGenerator;
+
+      private var _inventoryPlusBtn:Sprite;
+
+      private var _inventoryMinusBtn:Sprite;
       
       public var numClothingItemsInTradeListInitially:int;
       
@@ -549,6 +555,7 @@ package gui
             {
                createItemWindows(_currClothesArray,avEditor.itemBlock);
             }
+            setupInventoryControls();
             addListeners();
             KeepAlive.startKATimer(avEditor);
             _loadingMediaHelper.destroy();
@@ -1920,6 +1927,7 @@ package gui
          var _loc7_:Boolean = false;
          var _loc4_:Number = NaN;
          var _loc5_:Object = null;
+         var _loc9_:int = 0;
          _loc6_ = param1 == _currTradesArray;
          if(_loc6_)
          {
@@ -1979,7 +1987,9 @@ package gui
             }
             _loc5_ = generateItemAndIndexArray(param1);
             _loc8_ = new WindowAndScrollbarGenerator();
-            _loc8_.init(param2.width,param2.height,3,_loc4_,3,4,12,2,2,2 * 0.5,0,ItemWindowOriginal,_loc5_.items,"icon",0,{
+            // Expanded Inventory: more, smaller items a row (AJClient.inventoryColumns)
+            _loc9_ = AJClient.inventoryColumns();
+            _loc8_.init(param2.width,param2.height,3,_loc4_,_loc9_,4,_loc9_ * 4,2,2,2 * 0.5,0,ItemWindowOriginal,_loc5_.items,"icon",0,{
                "mouseDown":winMouseClick,
                "mouseOver":winMouseOver,
                "mouseOut":winMouseOut,
@@ -1990,7 +2000,8 @@ package gui
                "showAddRemoveBtns":_loc6_,
                "isChoosingForTradeList":_loc7_,
                "indexArray":_loc5_.indexes,
-               "mannequinInvIdx":(_mannequinDenItemHelper != null ? _mannequinDenItemHelper.mannequin.invIdx : -1)
+               "mannequinInvIdx":(_mannequinDenItemHelper != null ? _mannequinDenItemHelper.mannequin.invIdx : -1),
+               "itemScale":3 / _loc9_
             });
             if(param2 == avEditor.itemBlock)
             {
@@ -2656,7 +2667,106 @@ package gui
          avEditor.sortPopup.visible = false;
          createItemWindows(_currClothesArray,avEditor.itemBlock);
       }
-      
+
+      // Expanded Inventory's + and - (Strawberry Jam's), by the item counter:
+      // 3, 4 or 5 items a row (AJClient.inventoryColumns). they are put in
+      // the counter, where Strawberry Jam puts them by it, so they are shown
+      // and hidden with it.
+      private function setupInventoryControls() : void
+      {
+         var _loc1_:MovieClip = null;
+         var _loc2_:Point = null;
+         if(_inventoryPlusBtn && _inventoryPlusBtn.parent)
+         {
+            _inventoryPlusBtn.parent.removeChild(_inventoryPlusBtn);
+         }
+         if(_inventoryMinusBtn && _inventoryMinusBtn.parent)
+         {
+            _inventoryMinusBtn.parent.removeChild(_inventoryMinusBtn);
+         }
+         _inventoryPlusBtn = null;
+         _inventoryMinusBtn = null;
+         if(!AJClient.expandedInventoryOn() || !avEditor || !("itemCounter" in avEditor) || !avEditor.itemCounter)
+         {
+            return;
+         }
+         _loc1_ = avEditor.itemCounter;
+         _loc2_ = _loc1_.globalToLocal(avEditor.localToGlobal(new Point(_loc1_.x + _loc1_.counterTxt.width - 30,_loc1_.y - 7)));
+         _inventoryPlusBtn = createSmallButton("+");
+         _inventoryMinusBtn = createSmallButton("-");
+         _inventoryPlusBtn.x = _loc2_.x;
+         _inventoryPlusBtn.y = _loc2_.y;
+         _inventoryMinusBtn.x = _loc2_.x + 18;
+         _inventoryMinusBtn.y = _loc2_.y;
+         _inventoryPlusBtn.addEventListener("mouseDown",onInventoryPlus,false,0,true);
+         _inventoryMinusBtn.addEventListener("mouseDown",onInventoryMinus,false,0,true);
+         _loc1_.addChild(_inventoryPlusBtn);
+         _loc1_.addChild(_inventoryMinusBtn);
+      }
+
+      private function createSmallButton(param1:String) : Sprite
+      {
+         var _loc2_:Sprite = new Sprite();
+         var _loc3_:TextField = new TextField();
+         _loc2_.graphics.beginFill(3355443,0.8);
+         _loc2_.graphics.drawRoundRect(0,0,16,16,3,3);
+         _loc2_.graphics.endFill();
+         _loc2_.graphics.lineStyle(1,16777215,0.5);
+         _loc2_.graphics.drawRoundRect(0,0,16,16,3,3);
+         _loc3_.defaultTextFormat = new TextFormat("_sans",12,16777215,true);
+         _loc3_.text = param1;
+         _loc3_.x = 4;
+         _loc3_.y = 1;
+         _loc3_.width = 12;
+         _loc3_.height = 16;
+         _loc3_.selectable = false;
+         _loc3_.mouseEnabled = false;
+         _loc2_.addChild(_loc3_);
+         _loc2_.buttonMode = true;
+         _loc2_.mouseChildren = false;
+         return _loc2_;
+      }
+
+      private function onInventoryPlus(param1:MouseEvent) : void
+      {
+         param1.stopPropagation();
+         stepInventoryColumns(1);
+      }
+
+      private function onInventoryMinus(param1:MouseEvent) : void
+      {
+         param1.stopPropagation();
+         stepInventoryColumns(-1);
+      }
+
+      private function stepInventoryColumns(param1:int) : void
+      {
+         AJClient.stepInventoryColumns(param1);
+         refreshInventoryLayout();
+      }
+
+      // the clothes drawn again as many a row as now asked for, and the + and
+      // - put up or taken away (also when Settings turns the switch). only
+      // while the clothes are shown (the counter is, then): the trade list's
+      // windows take the new count when they are next made.
+      public function refreshInventoryLayout() : void
+      {
+         if(!avEditor)
+         {
+            return;
+         }
+         if(_itemClothingWindows && "itemCounter" in avEditor && avEditor.itemCounter && avEditor.itemCounter.visible)
+         {
+            _itemClothingWindows.destroy();
+            _itemClothingWindows = null;
+            if(_currClothesArray)
+            {
+               createItemWindows(_currClothesArray,avEditor.itemBlock);
+            }
+         }
+         setupInventoryControls();
+      }
+
       private static function sortByName(param1:Object, param2:Object) : int
       {
          var _loc3_:String = String(param1.name).toLowerCase();

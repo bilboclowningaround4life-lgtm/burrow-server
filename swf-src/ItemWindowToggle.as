@@ -188,6 +188,9 @@ package gui.itemWindows
             case "customArt":
                showCustomArt();
                break;
+            case "expandedInventory":
+               showExpandedInventory();
+               break;
             case "wasd":
                showWasd();
                break;
@@ -498,6 +501,30 @@ package gui.itemWindows
          AchievementXtCommManager.requestSetUserVar(9006,param1 ? 0 : 1);
          showCustomArt();
       }
+
+      // "Expanded Inventory" (Strawberry Jam's): more, smaller items a row in
+      // the clothes and item pickers, how many by the + and - at the avatar
+      // editor's item counter (AJClient.inventoryColumns). user var 9009.
+      private function showExpandedInventory() : void
+      {
+         var _loc1_:String = AJClient.expandedInventoryOn() ? "Turn off" : "Turn on";
+         _window.goNowBtn.down.txt.text = _loc1_;
+         _window.goNowBtn.mouse.mouse.txt.text = _loc1_;
+         _window.goNowBtn.mouse.up.txt.text = _loc1_;
+         _window.labelTxtCont.labelTxt.text = "Expanded Inventory";
+      }
+
+      private function setExpandedInventory(param1:Boolean) : void
+      {
+         gMainFrame.userInfo.userVarCache.updateUserVar(9009,param1 ? 1 : 0);
+         AchievementXtCommManager.requestSetUserVar(9009,param1 ? 1 : 0);
+         if(GuiManager.avatarEditor)
+         {
+            GuiManager.avatarEditor.refreshInventoryLayout();
+         }
+         showExpandedInventory();
+      }
+
       
       private function handleMouseDown(param1:MouseEvent) : void
       {
@@ -726,6 +753,9 @@ package gui.itemWindows
                   break;
                case "customArt":
                   setCustomArt(!AJClient.customArtOn());
+                  break;
+               case "expandedInventory":
+                  setExpandedInventory(!AJClient.expandedInventoryOn());
                   break;
                case "wasd":
                   setWasd(!AJClient.wasdOn());

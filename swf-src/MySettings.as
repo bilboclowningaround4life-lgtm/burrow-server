@@ -230,6 +230,12 @@ package gui
             "frame":"customArt",
             "iconFrame":"redeemCode"
          },{
+            // more, smaller items a row in the clothes and item pickers
+            // (AJClient.expandedInventoryOn)
+            "type":TOGGLE_TYPE_JOIN,
+            "frame":"expandedInventory",
+            "iconFrame":"redeemCode"
+         },{
             "type":TOGGLE_TYPE_JOIN,
             "frame":"redeemCode",
             "labelTxt":24819,
