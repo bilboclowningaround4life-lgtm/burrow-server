@@ -221,7 +221,9 @@ package avatar
          {
             throw new Error("setAvatarAction: sent invalid action sprite?!");
          }
-         addChatMessage(_actionMgr.getActionString(param1));
+         // Actions animate the avatar, but are not chat messages. Keeping the
+         // wire command out of the history prevents entries such as
+         // ":sitS:" and ":sitSW:" from filling the player's chat log.
          var _loc2_:AvatarWorldView = AvatarManager.avatarViewList[AvatarManager.playerSfsUserId];
          if(_loc2_ && _actionMgr.mirrorActions)
          {
