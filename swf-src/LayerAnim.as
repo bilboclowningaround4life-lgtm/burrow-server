@@ -171,8 +171,10 @@ package com.sbi.graphics
       
       private var _receivedData:Array;
       
-      // each requested image's place in _layers: items worn in the same
-      // slot are drawn in that order, the later over the earlier
+      // each requested image's places in _layers: different items can use
+      // the same art layer, so one image response can paint several pieces.
+      // Items worn in the same slot are drawn in their original order, the
+      // later over the earlier.
       private var _order:Object;
       
       private var _requestedIds:Set;
@@ -738,10 +740,16 @@ package com.sbi.graphics
             param2.push(_loc4_);
             if(param3)
             {
-               param3[_loc4_] = _loc5_.c;
                if(_order)
                {
-                  _order[_loc4_] = _loc6_;
+                  if(!_order[_loc4_])
+                  {
+                     _order[_loc4_] = [];
+                  }
+                  _order[_loc4_].push({
+                     "p":_loc6_,
+                     "c":_loc5_.c
+                  });
                }
             }
             _loc6_++;
@@ -761,6 +769,8 @@ package com.sbi.graphics
       {
          var _loc2_:* = 0;
          var _loc3_:int = 0;
+         var _loc8_:Array = null;
+         var _loc9_:Object = null;
          if(_preloadRequestedIds.remove(param1.id))
          {
             if(_preloadRequestedIds.isEmpty())
@@ -778,18 +788,31 @@ package com.sbi.graphics
          if(_requestedIds.remove(param1.id))
          {
             _loc3_ = param1.layer;
-            if(_loc3_ > 0)
-            {
-               _loc2_ = uint(_colors[param1.id]);
-            }
             if(param1.success)
             {
-               _receivedData.push({
-                  "l":_loc3_,
-                  "d":param1.imageData,
-                  "c":_loc2_,
-                  "p":(_order && _order.hasOwnProperty(param1.id) ? int(_order[param1.id]) : -1)
-               });
+               _loc8_ = _order && _order.hasOwnProperty(param1.id) ? _order[param1.id] as Array : null;
+               if(_loc8_ && _loc8_.length > 0)
+               {
+                  for each(_loc9_ in _loc8_)
+                  {
+                     _receivedData.push({
+                        "l":_loc3_,
+                        "d":param1.imageData,
+                        "c":uint(_loc9_.c),
+                        "p":int(_loc9_.p)
+                     });
+                  }
+               }
+               else
+               {
+                  // the animal's base has no entry in _order
+                  _receivedData.push({
+                     "l":_loc3_,
+                     "d":param1.imageData,
+                     "c":_loc2_,
+                     "p":-1
+                  });
+               }
             }
             if(_requestedIds.isEmpty())
             {
