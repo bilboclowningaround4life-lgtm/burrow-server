@@ -85,6 +85,7 @@ set -- \
   com.sbi.graphics.LayerAnim LayerAnim.as \
   com.sbi.graphics.LayerBitmap LayerBitmap.as \
   ecard.ECard ECard.as \
+  ecard.ECardXtCommManager ECardXtCommManager.as \
   game.ArtStudioKit ArtStudioKit.as \
   game.artStudioPainting.ArtStudioPainting ArtStudioPainting.as \
   game.artStudioGridDrawing.ArtStudioGridDrawing ArtStudioGridDrawing.as \
