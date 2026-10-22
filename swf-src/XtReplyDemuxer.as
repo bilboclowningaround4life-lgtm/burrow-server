@@ -7,6 +7,7 @@ package
    import flash.events.TimerEvent;
    import flash.utils.Timer;
    import flash.utils.getTimer;
+   import gui.itemWindows.ItemWindowToggle;
    
    public class XtReplyDemuxer
    {
@@ -157,6 +158,11 @@ package
          if(param1.obj[0] == "xfl")
          {
             AJClient.onFilterState(param1.obj);
+            return;
+         }
+         if(param1.obj[0] == "xcs")
+         {
+            ItemWindowToggle.chatStyleState(param1.obj);
             return;
          }
          if(param1.obj[0] == "xfa")

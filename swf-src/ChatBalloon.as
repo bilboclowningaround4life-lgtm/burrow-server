@@ -1,12 +1,19 @@
 package gui
 {
+   import flash.display.Bitmap;
+   import flash.display.BitmapData;
    import flash.display.MovieClip;
+   import flash.display.DisplayObject;
    import flash.display.Sprite;
+   import flash.display.GradientType;
+   import flash.display.SpreadMethod;
    import flash.events.MouseEvent;
    import flash.events.TextEvent;
+   import flash.filters.ConvolutionFilter;
    import flash.geom.ColorTransform;
    import flash.geom.Point;
    import flash.geom.Rectangle;
+   import flash.geom.Matrix;
    import flash.text.TextField;
    import flash.utils.setTimeout;
    import loader.MediaHelper;
@@ -71,13 +78,36 @@ package gui
       // emoji panel, say), which the game's font has none of: each is drawn
       // as a picture of it, from the server (/emoji/<code points>.png,
       // Twemoji's). each is {at, clip}: where its gap starts in the text shown.
-      // Three spaces fit the line-height-sized emoji without the noticeably
-      // wide hole four spaces left between neighbouring words or emoji.
-      private static const INLINE_GAP:String = "   ";
+      // Four spaces reserve a full inline cell. placeInline() scales wide
+      // artwork to this measured slot with a one-pixel gutter on each side,
+      // so consecutive emoji neither overlap nor touch surrounding text.
+      private static const INLINE_GAP:String = "    ";
       
       private static const LONGEST_EMOTE_CODE:int = 16;
       
       private var _inline:Array = [];
+
+      // The server appends this compact style to spoken chat packets.  It is
+      // deliberately drawn over the stock balloon rather than requiring new
+      // artwork, so every combination of the account-page colour controls is
+      // available at once.
+      private var _styleFill:Sprite;
+      private var _styleMask:Bitmap;
+      private var _styleBorderLayer:Bitmap;
+      private var _styleBackground:uint;
+      private var _styleAccent:uint;
+      private var _styleText:uint;
+      private var _styleBorder:uint;
+      private var _styleOpacity:Number;
+      private var _styleAnimation:String = "none";
+      private var _styleSpeed:Number = 100;
+      private var _styleGradient:String = "linear";
+      private var _styleAngle:Number = 45;
+      private var _styleStrength:Number = 100;
+      private var _styleOutline:Number = 1;
+      private var _styleStops:Array = [];
+      private var _styleElapsed:int = 0;
+      private var _hasStyle:Boolean = false;
       
       public function ChatBalloon()
       {
@@ -112,7 +142,7 @@ package gui
          setEmoteBgOffsets();
       }
       
-      public function setText(param1:String, param2:Boolean = false, param3:Boolean = true) : void
+      public function setText(param1:String, param2:Boolean = false, param3:Boolean = true, param4:String = "") : void
       {
          if(_emote)
          {
@@ -142,7 +172,8 @@ package gui
          _msgTxt.height;
          // AJClient.whisperNext is set by the server's "xw" just ahead of a
          // whispered line.
-         _balloonBG.transform.colorTransform = AJClient.whisperNext ? AJClient.whisperTint() : new ColorTransform();
+         var _loc10_:Boolean = AJClient.whisperNext;
+         _balloonBG.transform.colorTransform = _loc10_ ? AJClient.whisperTint() : new ColorTransform();
          AJClient.whisperNext = false;
          if(!_hasSbTextfield)
          {
@@ -172,6 +203,10 @@ package gui
          {
             _msgTxt.textColor = 4477529;
          }
+         // Emoji-window choices are inline chat content, so even a lone one
+         // keeps the selected chat style. Standalone game emotes use
+         // setEmote(), where any previous custom bubble is cleared.
+         applyStyle(param4,param2,_loc10_);
          // tags (AJClient.resolveMentions): once the server says which "@"s
          // are players', light blue and underlined, each a link to that
          // player's card, if the balloon still says the same. (the field is
@@ -199,6 +234,12 @@ package gui
                }
             });
          }
+         // The stock balloon has now stretched to the measured text height;
+         // redraw the custom body at its final size (also for still styles).
+         if(_hasStyle)
+         {
+            drawStyle();
+         }
          _timeout = 8000;
          if(param3 && this.parent)
          {
@@ -211,6 +252,311 @@ package gui
             placeInline();
             setTimeout(placeInline,42);
          }
+      }
+
+      // `background,accent,text,border,opacity,animation,speed,gradient,angle,
+      // strength,outline,stops`, emitted by
+      // lib/chatstyles.js. Staff warnings and whispers intentionally retain
+      // their existing colours, so those states are never made ambiguous.
+      private function applyStyle(param1:String, param2:Boolean, param3:Boolean) : void
+      {
+         clearStyle();
+         if(param1 == "" || param2 || param3 || !GuiManager.customChatBubblesEnabled())
+         {
+            return;
+         }
+         var _loc4_:Array = param1.split(",");
+         if((_loc4_.length != 7 && _loc4_.length != 10 && _loc4_.length != 11 && _loc4_.length != 12) || !/^[0-9a-fA-F]{6}$/.test(_loc4_[0]) || !/^[0-9a-fA-F]{6}$/.test(_loc4_[1]) || !/^[0-9a-fA-F]{6}$/.test(_loc4_[2]) || !/^[0-9a-fA-F]{6}$/.test(_loc4_[3]) || !/^(?:2[5-9]|[3-9][0-9]|100)$/.test(_loc4_[4]) || !/^(?:[4-9][0-9]|[12][0-9]{2}|300)$/.test(_loc4_[6]))
+         {
+            return;
+         }
+         _styleBackground = uint(parseInt(_loc4_[0],16));
+         _styleAccent = uint(parseInt(_loc4_[1],16));
+         _styleText = uint(parseInt(_loc4_[2],16));
+         _styleBorder = uint(parseInt(_loc4_[3],16));
+         _styleOpacity = Math.max(0.25,Math.min(1,Number(_loc4_[4]) / 100));
+         _styleAnimation = _loc4_[5] == "pulse" || _loc4_[5] == "shimmer" || _loc4_[5] == "flow" || _loc4_[5] == "rainbow" ? _loc4_[5] : "none";
+         _styleSpeed = Math.max(40,Math.min(300,Number(_loc4_[6])));
+         _styleGradient = _loc4_.length > 7 && (_loc4_[7] == "solid" || _loc4_[7] == "radial") ? _loc4_[7] : "linear";
+         _styleAngle = _loc4_.length > 8 && int(_loc4_[8]) >= 0 && int(_loc4_[8]) <= 315 && int(_loc4_[8]) % 45 == 0 ? int(_loc4_[8]) : 45;
+         _styleStrength = _loc4_.length > 9 ? Math.max(0,Math.min(100,int(_loc4_[9]))) : 100;
+         _styleOutline = _loc4_.length > 10 ? Math.max(0,Math.min(4,int(_loc4_[10]))) : 1;
+         _styleStops = parseStyleStops(_loc4_.length > 11 ? String(_loc4_[11]) : "");
+         _styleElapsed = 0;
+         _hasStyle = true;
+         _msgTxt.textColor = _styleText;
+         // The native artwork remains underneath as the exact outer border;
+         // drawStyle masks the custom fill to that artwork's silhouette.
+         _balloonBG.transform.colorTransform = colourTransform(_styleBorder,1);
+      }
+
+      private function clearStyle() : void
+      {
+         if(_styleFill)
+         {
+            _styleFill.mask = null;
+         }
+         if(_styleFill && _styleFill.parent)
+         {
+            _styleFill.parent.removeChild(_styleFill);
+         }
+         if(_styleMask)
+         {
+            if(_styleMask.parent)
+            {
+               _styleMask.parent.removeChild(_styleMask);
+            }
+            if(_styleMask.bitmapData)
+            {
+               _styleMask.bitmapData.dispose();
+            }
+         }
+         if(_styleBorderLayer)
+         {
+            if(_styleBorderLayer.parent)
+            {
+               _styleBorderLayer.parent.removeChild(_styleBorderLayer);
+            }
+            if(_styleBorderLayer.bitmapData)
+            {
+               _styleBorderLayer.bitmapData.dispose();
+            }
+         }
+         _styleFill = null;
+         _styleMask = null;
+         _styleBorderLayer = null;
+         _styleAnimation = "none";
+         _styleGradient = "linear";
+         _styleStops = [];
+         _hasStyle = false;
+      }
+
+      private static function colourTransform(param1:uint, param2:Number) : ColorTransform
+      {
+         return new ColorTransform(0,0,0,param2,param1 >> 16 & 255,param1 >> 8 & 255,param1 & 255,0);
+      }
+
+      private static function blendColour(param1:uint, param2:uint, param3:Number) : uint
+      {
+         var _loc4_:Number = 1 - param3;
+         var _loc5_:uint = uint((param1 >> 16 & 255) * _loc4_ + (param2 >> 16 & 255) * param3);
+         var _loc6_:uint = uint((param1 >> 8 & 255) * _loc4_ + (param2 >> 8 & 255) * param3);
+         var _loc7_:uint = uint((param1 & 255) * _loc4_ + (param2 & 255) * param3);
+         return _loc5_ << 16 | _loc6_ << 8 | _loc7_;
+      }
+
+      private static function rainbowColour(param1:Number) : uint
+      {
+         var _loc2_:int = int(param1 * 6) % 6;
+         var _loc3_:Number = param1 * 6 - int(param1 * 6);
+         var _loc4_:uint = uint(255 * _loc3_);
+         var _loc5_:uint = 255 - _loc4_;
+         if(_loc2_ == 0)
+         {
+            return 0xFF0000 | _loc4_ << 8;
+         }
+         if(_loc2_ == 1)
+         {
+            return _loc5_ << 16 | 0xFF00;
+         }
+         if(_loc2_ == 2)
+         {
+            return 0x00FF00 | _loc4_;
+         }
+         if(_loc2_ == 3)
+         {
+            return _loc5_ << 8 | 0xFF;
+         }
+         if(_loc2_ == 4)
+         {
+            return _loc4_ << 16 | 0xFF;
+         }
+         return 0xFF0000 | _loc5_ << 8;
+      }
+
+      private function parseStyleStops(param1:String) : Array
+      {
+         var _loc1_:Array = [];
+         var _loc2_:Array = String(param1 || "").split(";");
+         var _loc3_:int = 0;
+         var _loc4_:Array = null;
+         var _loc5_:int = -1;
+         while(_loc3_ < _loc2_.length && _loc2_.length >= 2 && _loc2_.length <= 5)
+         {
+            _loc4_ = String(_loc2_[_loc3_]).split(":");
+            if(_loc4_.length != 2 || !/^[0-9a-fA-F]{6}$/.test(String(_loc4_[0])) || !/^100$|^[1-9]?\d$/.test(String(_loc4_[1])) || int(_loc4_[1]) <= _loc5_)
+            {
+               _loc1_ = [];
+               break;
+            }
+            _loc5_ = int(_loc4_[1]);
+            _loc1_.push({"color":uint(parseInt(_loc4_[0],16)),"position":_loc5_});
+            _loc3_++;
+         }
+         if(_loc1_.length < 2 || int(_loc1_[0].position) != 0 || int(_loc1_[_loc1_.length - 1].position) != 100)
+         {
+            _loc1_ = [{"color":_styleBackground,"position":0},{"color":_styleAccent,"position":100}];
+         }
+         return _loc1_;
+      }
+
+      private function drawStyle() : void
+      {
+         if(!_hasStyle || !_balloonBG || !_msgTxt)
+         {
+            return;
+         }
+         if(_styleFill == null)
+         {
+            _styleFill = new Sprite();
+            _styleFill.mouseEnabled = false;
+            _styleFill.mouseChildren = false;
+            // Flash uses a Bitmap mask's alpha channel only when both sides
+            // are cached. Without this it masks to the bitmap's rectangle.
+            _styleFill.cacheAsBitmap = true;
+            // The stock background contains masks and nested timeline layers.
+            // Put this beside it, directly below the text, so those masks
+            // cannot hide custom colours or animated gradients.
+            var _loc8_:DisplayObject = _msgTxt as DisplayObject;
+            while(_loc8_ && _loc8_.parent != this)
+            {
+               _loc8_ = _loc8_.parent;
+            }
+            if(_loc8_ && _loc8_.parent == this)
+            {
+               addChildAt(_styleFill,getChildIndex(_loc8_));
+            }
+            else
+            {
+               addChildAt(_styleFill,Math.min(numChildren,getChildIndex(_balloonBG) + 1));
+            }
+         }
+         var _loc9_:Rectangle = _balloonBG.getBounds(this);
+         if(_styleMask == null)
+         {
+            // Snapshot only the native bubble's alpha and use it as a mask.
+            // Eroding that silhouette by the chosen outline width leaves the
+            // tinted native artwork visible as an even border, including the
+            // speech tail. A rounded-rectangle inset cannot match that shape.
+            var _loc10_:BitmapData = new BitmapData(Math.max(1,Math.ceil(_loc9_.width)),Math.max(1,Math.ceil(_loc9_.height)),true,0);
+            var _loc11_:Matrix = _balloonBG.transform.matrix.clone();
+            _loc11_.translate(-_loc9_.x,-_loc9_.y);
+            _loc10_.draw(_balloonBG,_loc11_,null,null,null,true);
+            var _loc20_:BitmapData = new BitmapData(_loc10_.width,_loc10_.height,true,0);
+            _loc20_.threshold(_loc10_,_loc10_.rect,new Point(),">",0x08000000,0xFFFFFFFF,0xFF000000,false);
+            _loc10_.dispose();
+            var _loc32_:BitmapData = _loc20_.clone();
+            if(_styleOutline > 0)
+            {
+               var _loc21_:int = int(_styleOutline) * 2 + 1;
+               var _loc22_:Array = [];
+               var _loc23_:int = 0;
+               var _loc24_:int = 0;
+               var _loc25_:int = 0;
+               while(_loc24_ < _loc21_)
+               {
+                  _loc25_ = 0;
+                  while(_loc25_ < _loc21_)
+                  {
+                     if(Math.abs(_loc24_ - int(_styleOutline)) + Math.abs(_loc25_ - int(_styleOutline)) <= _styleOutline)
+                     {
+                        _loc22_.push(1);
+                        _loc23_++;
+                     }
+                     else
+                     {
+                        _loc22_.push(0);
+                     }
+                     _loc25_++;
+                  }
+                  _loc24_++;
+               }
+               var _loc26_:BitmapData = new BitmapData(_loc20_.width,_loc20_.height,true,0);
+               // Outside the snapshot must be transparent. Clamping repeats
+               // opaque edge pixels and prevents the top/side of the mask
+               // from shrinking, which made thick outlines appear only at
+               // the lower edge and corners.
+               _loc26_.applyFilter(_loc20_,_loc20_.rect,new Point(),new ConvolutionFilter(_loc21_,_loc21_,_loc22_,_loc23_,0,false,false,0,0));
+               _loc20_.fillRect(_loc20_.rect,0);
+               _loc20_.threshold(_loc26_,_loc26_.rect,new Point(),">",0xFE000000,0xFFFFFFFF,0xFF000000,false);
+               _loc26_.dispose();
+               // Keep only the pixels removed from the inner mask. This is a
+               // solid, even ring and does not inherit the stock art's uneven
+               // border opacity.
+               _loc32_.threshold(_loc20_,_loc20_.rect,new Point(),">",0x00000000,0x00000000,0xFF000000,false);
+               _loc32_.colorTransform(_loc32_.rect,colourTransform(_styleBorder,1));
+               _styleBorderLayer = new Bitmap(_loc32_,"auto",true);
+               _styleBorderLayer.x = _loc9_.x;
+               _styleBorderLayer.y = _loc9_.y;
+               _styleBorderLayer.cacheAsBitmap = true;
+               addChildAt(_styleBorderLayer,getChildIndex(_styleFill));
+            }
+            else
+            {
+               _loc32_.dispose();
+            }
+            _styleMask = new Bitmap(_loc20_,"auto",true);
+            _styleMask.x = _loc9_.x;
+            _styleMask.y = _loc9_.y;
+            _styleMask.cacheAsBitmap = true;
+            addChildAt(_styleMask,getChildIndex(_styleFill));
+            _styleFill.mask = _styleMask;
+         }
+         var _loc1_:Number = _loc9_.x;
+         var _loc2_:Number = _loc9_.y;
+         var _loc3_:Number = Math.max(12,_loc9_.width);
+         var _loc4_:Number = Math.max(12,_loc9_.height);
+         var _loc5_:Number = (_styleElapsed * _styleSpeed / 100000) % 1;
+         var _loc27_:Array = [];
+         var _loc28_:Array = [];
+         var _loc29_:Array = [];
+         var _loc30_:int = 0;
+         var _loc31_:uint = 0;
+         while(_loc30_ < _styleStops.length)
+         {
+            _loc31_ = uint(_styleStops[_loc30_].color);
+            if(_loc30_ > 0)
+            {
+               _loc31_ = blendColour(_styleBackground,_loc31_,_styleStrength / 100);
+            }
+            if(_styleAnimation == "shimmer")
+            {
+               _loc31_ = blendColour(_loc31_,_styleBackground,(Math.sin(_loc5_ * Math.PI * 2) + 1) * 0.5);
+            }
+            _loc27_.push(_loc31_);
+            _loc28_.push(_styleOpacity);
+            _loc29_.push(int(Number(_styleStops[_loc30_].position) * 2.55));
+            _loc30_++;
+         }
+         _styleFill.graphics.clear();
+         var _loc7_:Matrix = new Matrix();
+         var _loc12_:Number = _styleAngle * Math.PI / 180;
+         var _loc13_:String = _styleGradient == "radial" ? GradientType.RADIAL : GradientType.LINEAR;
+         _loc7_.createGradientBox(_loc3_,_loc4_,_loc12_,_loc1_,_loc2_);
+         if(_styleGradient == "solid" && _styleAnimation != "rainbow")
+         {
+            _styleFill.graphics.beginFill(_styleBackground,_styleOpacity);
+         }
+         else if(_styleAnimation == "flow")
+         {
+            _loc7_.createGradientBox(_loc3_ * 0.75,_loc4_ * 0.75,_loc12_,_loc1_ + Math.cos(_loc12_) * (_loc5_ * 2 - 1) * _loc3_,_loc2_ + Math.sin(_loc12_) * (_loc5_ * 2 - 1) * _loc4_);
+            _styleFill.graphics.beginGradientFill(_loc13_,_loc27_,_loc28_,_loc29_,_loc7_,SpreadMethod.REFLECT);
+         }
+         else if(_styleAnimation == "rainbow" && _styleGradient == "solid")
+         {
+            _styleFill.graphics.beginFill(rainbowColour(_loc5_),_styleOpacity);
+         }
+         else if(_styleAnimation == "rainbow")
+         {
+            _styleFill.graphics.beginGradientFill(_loc13_,[rainbowColour(_loc5_),rainbowColour((_loc5_ + 0.18) % 1),rainbowColour((_loc5_ + 0.36) % 1)],[_styleOpacity,_styleOpacity,_styleOpacity],[0,128,255],_loc7_);
+         }
+         else
+         {
+            _styleFill.graphics.beginGradientFill(_loc13_,_loc27_,_loc28_,_loc29_,_loc7_);
+         }
+         _styleFill.graphics.drawRect(_loc1_,_loc2_,_loc3_,_loc4_);
+         _styleFill.graphics.endFill();
+         _styleFill.alpha = _styleAnimation == "pulse" ? 0.55 + 0.45 * (Math.sin(_loc5_ * Math.PI * 2) + 1) * 0.5 : 1;
       }
       
       // the text with each emote code and emoji (above) replaced by a gap, the
@@ -428,6 +774,8 @@ package gui
          var _loc1_:Object = null;
          var _loc2_:Rectangle = null;
          var _loc3_:Rectangle = null;
+         var _loc4_:Number = 0;
+         var _loc5_:Number = 1;
          for each(_loc1_ in _inline)
          {
             _loc2_ = _msgTxt.getCharBoundaries(_loc1_.at);
@@ -445,6 +793,13 @@ package gui
                _loc1_.clip.scaleX = _loc1_.clip.scaleY = 1;
                _loc1_.clip.height = _loc2_.height;
                _loc1_.clip.scaleX = _loc1_.clip.scaleY;
+               _loc4_ = Math.max(1,_loc3_.x + _loc3_.width - _loc2_.x - 2);
+               if(_loc1_.clip.width > _loc4_)
+               {
+                  _loc5_ = _loc4_ / _loc1_.clip.width;
+                  _loc1_.clip.scaleX *= _loc5_;
+                  _loc1_.clip.scaleY *= _loc5_;
+               }
                _loc1_.clip.x = _msgTxt.x + (_loc2_.x + _loc3_.x + _loc3_.width) / 2;
                _loc1_.clip.y = _msgTxt.y + _loc2_.y + _loc2_.height / 2;
                if(_loc1_.clip.parent != this)
@@ -662,6 +1017,10 @@ package gui
       
       public function setEmote(param1:Sprite, param2:int = -1) : void
       {
+         // Native one-emote messages hide balloon_bg. Remove any independent
+         // custom fill left by the preceding text message as well.
+         clearStyle();
+         _balloonBG.transform.colorTransform = new ColorTransform();
          clearMentionBacks();
          if(this.currentFrameLabel != "advBtn")
          {
@@ -718,6 +1077,11 @@ package gui
       
       public function heartbeat(param1:int) : void
       {
+         if(_styleAnimation != "none" && visible)
+         {
+            _styleElapsed += param1;
+            drawStyle();
+         }
          if(_timeout && _permEmoteMediaId < 0)
          {
             if(param1 >= _timeout)

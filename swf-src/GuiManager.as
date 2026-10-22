@@ -270,6 +270,8 @@ package gui
       private static var _namebarBadgeList:Array;
       
       private static var _sharedObj:SharedObject;
+
+      private static var _customChatBubbles:Boolean = true;
       
       private static var _giftGemsMediaHelper:MediaHelper;
       
@@ -365,11 +367,13 @@ package gui
       public static function setupSharedObject() : void
       {
          _sharedObj = null;
+         _customChatBubbles = true;
          if(gMainFrame.myFlashVarUserName != null)
          {
             try
             {
                _sharedObj = SharedObject.getLocal(gMainFrame.myFlashVarUserName);
+               _customChatBubbles = _sharedObj.data.customChatBubbles !== false;
                if(_sharedObj.data.cursor == null || _sharedObj.data.cursor == "custom")
                {
                   CursorManager.switchToCursor("custom_cursor");
@@ -458,6 +462,31 @@ package gui
       public static function get sharedObj() : SharedObject
       {
          return _sharedObj;
+      }
+
+      // A local accessibility/preference switch: players can keep their own
+      // saved style visible to others while rendering every bubble normally
+      // on this installation.
+      public static function customChatBubblesEnabled() : Boolean
+      {
+         return _customChatBubbles;
+      }
+
+      public static function setCustomChatBubblesEnabled(param1:Boolean) : void
+      {
+         _customChatBubbles = param1;
+         if(_sharedObj == null)
+         {
+            return;
+         }
+         _sharedObj.data.customChatBubbles = param1;
+         try
+         {
+            _sharedObj.flush();
+         }
+         catch(e:Error)
+         {
+         }
       }
       
       public static function startFFM(param1:Boolean = false) : void

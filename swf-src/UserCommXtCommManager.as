@@ -762,6 +762,13 @@ package avatar
                         {
                            _loc2_ = reverseSpecialWords(_loc2_);
                         }
+                        // Burrow appends a style after the normal extra field.
+                        // Message and type remain at their stock indexes, so
+                        // pending chat and every unpatched client still work.
+                        if(param1.length > 6 && AvatarManager.avatarViewList[_loc19_])
+                        {
+                           AvatarManager.avatarViewList[_loc19_].setChatStyle(String(param1[6]));
+                        }
                         AvatarManager.addAvatarMessage(_loc2_,_loc19_,int(param1[5]));
                         break;
                      case 2:

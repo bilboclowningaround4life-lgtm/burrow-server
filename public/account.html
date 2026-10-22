@@ -116,7 +116,7 @@
         line-height: 17px;
         text-align: center;
       }
-      @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+      @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
       .wrap { max-width: 760px; margin: 0 auto; }
       label.check { display: flex; align-items: center; color: var(--text); font-size: 14px; cursor: pointer; }
       /* dark on white whatever the page: that is what a phone's camera reads. */
@@ -175,6 +175,26 @@
       .ban-head { display: flex; align-items: center; gap: 12px; margin-bottom: 4px; }
       .ban-head img { width: 44px; height: 44px; flex: none; }
       .ban-head h2 { margin: 0; font-size: 22px; }
+      .chat-style-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 12px; }
+      .chat-style-grid input[type="color"] { width: 100%; height: 42px; padding: 3px; cursor: pointer; }
+      .gradient-editor { margin: 14px 0; padding: 12px; border: 1px solid var(--line); border-radius: 12px; }
+      .gradient-editor-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+      .gradient-stops { display: grid; gap: 8px; }
+      .gradient-ramp { height: 22px; margin-bottom: 10px; border: 1px solid var(--line); border-radius: 999px; }
+      .gradient-stop { display: grid; grid-template-columns: 50px minmax(100px, 1fr) 72px auto; align-items: center; gap: 8px; }
+      .gradient-stop input[type="color"] { width: 50px; height: 36px; padding: 2px; cursor: pointer; }
+      .gradient-stop input[type="range"] { margin: 0; }
+      .gradient-stop output { color: var(--muted); font-size: 12px; text-align: right; }
+      .chat-preview { min-height: 74px; display: grid; place-items: center; margin-top: 14px; padding: 12px 18px; border: 1px solid var(--line); border-radius: 18px; text-align: center; font-weight: 700; background: linear-gradient(120deg, #fff, #dfe8ff); color: #445559; }
+      .chat-preview.pulse { animation: chatPulse 1.5s ease-in-out infinite alternate; }
+      .chat-preview.shimmer { background-size: 250% 100%; animation: chatShimmer 1.5s linear infinite; }
+      .chat-preview.flow { background-size: 220% 220%; animation: chatFlow 1.5s linear infinite alternate; }
+      .chat-preview.rainbow { animation: chatRainbow 2s linear infinite; }
+      @keyframes chatPulse { to { opacity: .55; } }
+      @keyframes chatShimmer { to { background-position: 100% 0; } }
+      @keyframes chatFlow { to { background-position: 100% 100%; } }
+      @keyframes chatRainbow { to { filter: hue-rotate(360deg); } }
+      @media (max-width: 440px) { .chat-style-grid { grid-template-columns: 1fr; } }
       #ban-section pre { margin: 0 0 12px; font: inherit; white-space: pre-wrap; overflow-wrap: anywhere; }
       #ban-section h3 { margin: 18px 0 0; }
     </style>
@@ -354,6 +374,35 @@
           <p class="status" id="bio-status" role="status"></p>
         </section>
 
+        <section id="chat-bubble">
+          <h2>Chat bubble</h2>
+          <p>Choose how your spoken chat bubbles look for everyone using Burrow's current client.</p>
+          <form id="chat-style-form">
+            <div class="gradient-editor">
+              <div class="gradient-editor-head"><b>Gradient colours</b><button id="chat-stop-add" type="button">Add colour</button></div>
+              <div class="gradient-ramp" id="chat-ramp"></div>
+              <div class="gradient-stops" id="chat-stops"></div>
+            </div>
+            <div class="chat-style-grid">
+              <div hidden><input id="chat-background" type="color" value="#ffffff"></div>
+              <div hidden><input id="chat-accent" type="color" value="#dfe8ff"></div>
+              <div><label for="chat-text-colour">Text colour</label><input id="chat-text-colour" type="color" value="#445559"></div>
+              <div><label for="chat-border">Border</label><input id="chat-border" type="color" value="#9aabb0"></div>
+              <div><label for="chat-opacity">Opacity <span class="hint" id="chat-opacity-value"></span></label><input id="chat-opacity" type="range" min="25" max="100" value="75"></div>
+              <div><label for="chat-gradient">Gradient</label><select id="chat-gradient"><option value="linear">Linear</option><option value="radial">Radial</option><option value="solid">Solid</option></select></div>
+              <div><label for="chat-angle">Direction</label><select id="chat-angle"><option value="0">0°</option><option value="45">45°</option><option value="90">90°</option><option value="135">135°</option><option value="180">180°</option><option value="225">225°</option><option value="270">270°</option><option value="315">315°</option></select></div>
+              <div><label for="chat-strength">Gradient strength <span class="hint" id="chat-strength-value"></span></label><input id="chat-strength" type="range" min="0" max="100" value="100"></div>
+              <div><label for="chat-outline">Outline thickness <span class="hint" id="chat-outline-value"></span></label><input id="chat-outline" type="range" min="0" max="4" step="1" value="1"></div>
+              <div><label for="chat-animation">Animation</label><select id="chat-animation"><option value="none">Still</option><option value="pulse">Pulse</option><option value="shimmer">Shimmer</option><option value="flow">Flow</option><option value="rainbow">Rainbow</option></select></div>
+              <div><label for="chat-speed">Animation speed <span class="hint" id="chat-speed-value"></span></label><input id="chat-speed" type="range" min="40" max="300" value="100"></div>
+            </div>
+            <div class="chat-preview" id="chat-preview">Your chat bubble preview</div>
+            <div class="row"><button id="chat-style-swap" type="button">Swap gradient</button><button id="chat-style-random" type="button">Random gradient</button></div>
+            <div class="row"><button class="primary" type="submit">Save chat style</button><button id="chat-style-reset" type="button">Use original bubble</button></div>
+          </form>
+          <p class="status" id="chat-style-status" role="status"></p>
+        </section>
+
         <section>
           <h2>Playtime</h2>
           <p id="playtime-text"></p>
@@ -504,8 +553,12 @@
       ];
       const VIA = {game: "Game", launcher: "Client", web: "This page", mod: "Moderator panel"};
       const ANIMALS = {1: "Tiger", 4: "Wolf", 5: "Koala", 6: "Panda", 7: "Monkey", 8: "Bunny", 13: "Rhino", 18: "Seal", 24: "Penguin"};
+      const DEFAULT_CHAT_STYLE = {background: "ffffff", accent: "dfe8ff", text: "445559", border: "9aabb0", opacity: 75,
+        animation: "none", speed: 100, gradient: "linear", angle: 45, strength: 100, outline: 1,
+        stops: "ffffff:0;dfe8ff:100"};
 
       let account = null;
+      let chatStops = [];
       let twoStepSetup = null; // {secret, uri} while two-step sign-in is being turned on
       let twoStepCodes = null; // the recovery codes, until the player says they kept them
 
@@ -525,6 +578,126 @@
       const setStatus = (id, text, bad = false) => {
         $(id).textContent = text;
         $(id).classList.toggle("bad", bad);
+      };
+
+      const parseChatStops = style => {
+        const parsed = String(style.stops || "").split(";").map(value => {
+          const match = /^([0-9a-f]{6}):(100|[1-9]?\d)$/i.exec(value);
+          return match ? {color: match[1].toLowerCase(), position: Number(match[2])} : null;
+        });
+        return parsed.length >= 2 && parsed.length <= 5 && parsed.every(Boolean)
+          ? parsed : [{color: style.background, position: 0}, {color: style.accent, position: 100}];
+      };
+
+      const styleValue = () => {
+        if (chatStops.length < 2) chatStops = parseChatStops(DEFAULT_CHAT_STYLE);
+        chatStops.sort((one, two) => one.position - two.position);
+        chatStops[0].position = 0;
+        chatStops.at(-1).position = 100;
+        const background = chatStops[0].color;
+        const accent = chatStops.at(-1).color;
+        $("chat-background").value = `#${background}`;
+        $("chat-accent").value = `#${accent}`;
+        return {
+          background, accent,
+          text: $("chat-text-colour").value.slice(1).toLowerCase(),
+          border: $("chat-border").value.slice(1).toLowerCase(),
+          opacity: Number($("chat-opacity").value),
+          animation: $("chat-animation").value,
+          speed: Number($("chat-speed").value),
+          gradient: $("chat-gradient").value,
+          angle: Number($("chat-angle").value),
+          strength: Number($("chat-strength").value),
+          outline: Number($("chat-outline").value),
+          stops: chatStops.map(stop => `${stop.color}:${stop.position}`).join(";"),
+        };
+      };
+
+      const paintChatPreview = () => {
+        const style = styleValue();
+        const preview = $("chat-preview");
+        preview.className = `chat-preview ${style.animation}`;
+        const mix = (one, two, amount) => one.map((part, index) => Math.round(part + (two[index] - part) * amount));
+        const rgb = hex => [0, 2, 4].map(at => parseInt(hex.slice(at, at + 2), 16));
+        const stops = parseChatStops(style).map((stop, index) => {
+          const colour = index ? mix(rgb(style.background), rgb(stop.color), style.strength / 100) : rgb(stop.color);
+          return `#${colour.map(part => part.toString(16).padStart(2, "0")).join("")} ${stop.position}%`;
+        }).join(", ");
+        preview.style.background = style.gradient === "solid" ? `#${style.background}` : style.gradient === "radial"
+          ? `radial-gradient(circle, ${stops})`
+          : `linear-gradient(${style.angle}deg, ${stops})`;
+        preview.style.color = `#${style.text}`;
+        preview.style.borderColor = `#${style.border}`;
+        preview.style.borderWidth = `${style.outline}px`;
+        preview.style.opacity = String(style.opacity / 100);
+        preview.style.animationDuration = `${Math.max(.25, 1.5 * 100 / style.speed)}s`;
+        $("chat-opacity-value").textContent = `${style.opacity}%`;
+        $("chat-speed-value").textContent = `${style.speed}%`;
+        $("chat-strength-value").textContent = `${style.strength}%`;
+        $("chat-outline-value").textContent = `${style.outline}px`;
+      };
+
+      const renderChatStops = () => {
+        chatStops.sort((one, two) => one.position - two.position);
+        const holder = $("chat-stops");
+        holder.replaceChildren();
+        $("chat-ramp").style.background = `linear-gradient(90deg, ${chatStops.map(stop => `#${stop.color} ${stop.position}%`).join(", ")})`;
+        chatStops.forEach((stop, index) => {
+          const row = el("div", undefined, "gradient-stop");
+          const colour = document.createElement("input");
+          colour.type = "color";
+          colour.value = `#${stop.color}`;
+          colour.setAttribute("aria-label", `Gradient colour ${index + 1}`);
+          const position = document.createElement("input");
+          position.type = "range";
+          position.min = String(index ? chatStops[index - 1].position + 1 : 0);
+          position.max = String(index < chatStops.length - 1 ? chatStops[index + 1].position - 1 : 100);
+          position.value = String(stop.position);
+          position.disabled = index === 0 || index === chatStops.length - 1;
+          const value = document.createElement("output");
+          value.textContent = index === 0 ? "Start" : index === chatStops.length - 1 ? "End" : `${stop.position}%`;
+          const remove = document.createElement("button");
+          remove.type = "button";
+          remove.textContent = "Remove";
+          remove.disabled = chatStops.length <= 2;
+          colour.addEventListener("input", () => {
+            stop.color = colour.value.slice(1).toLowerCase();
+            renderChatStops();
+            paintChatPreview();
+          });
+          position.addEventListener("input", () => {
+            stop.position = Number(position.value);
+            value.textContent = `${stop.position}%`;
+            $("chat-ramp").style.background = `linear-gradient(90deg, ${chatStops.map(item => `#${item.color} ${item.position}%`).join(", ")})`;
+            paintChatPreview();
+          });
+          remove.addEventListener("click", () => {
+            chatStops.splice(index, 1);
+            renderChatStops();
+            paintChatPreview();
+          });
+          row.append(colour, position, value, remove);
+          holder.append(row);
+        });
+        $("chat-stop-add").disabled = chatStops.length >= 5;
+      };
+
+      const fillChatStyle = style => {
+        style = {...DEFAULT_CHAT_STYLE, ...style};
+        chatStops = parseChatStops(style);
+        $("chat-background").value = `#${style.background}`;
+        $("chat-accent").value = `#${style.accent}`;
+        $("chat-text-colour").value = `#${style.text}`;
+        $("chat-border").value = `#${style.border}`;
+        $("chat-opacity").value = String(style.opacity);
+        $("chat-animation").value = style.animation;
+        $("chat-speed").value = String(style.speed);
+        $("chat-gradient").value = style.gradient;
+        $("chat-angle").value = String(style.angle);
+        $("chat-strength").value = String(style.strength);
+        $("chat-outline").value = String(style.outline);
+        renderChatStops();
+        paintChatPreview();
       };
 
       const api = async (path, body) => {
@@ -757,6 +930,9 @@
         }
         renderMyItems();
         $("lock-notice").hidden = !account.locked;
+        if (!$("chat-style-form").contains(document.activeElement)) {
+          fillChatStyle(account.chatStyle);
+        }
 
         const tiles = [
           [account.online ? "Playing now" : account.lastSeen ? when(account.lastSeen) : "Not played yet", "Last seen"],
@@ -1342,6 +1518,44 @@
         await act({action: "bio", text: $("bio-text").value}, "bio-status");
       });
       $("bio-remove").addEventListener("click", () => act({action: "bio", text: ""}, "bio-status"));
+
+      ["chat-background", "chat-accent", "chat-text-colour", "chat-border", "chat-opacity", "chat-gradient", "chat-angle", "chat-strength", "chat-outline", "chat-animation", "chat-speed"].forEach(id => {
+        $(id).addEventListener("input", paintChatPreview);
+        $(id).addEventListener("change", paintChatPreview);
+      });
+      $("chat-style-form").addEventListener("submit", async event => {
+        event.preventDefault();
+        await act({action: "chatStyle", style: styleValue()}, "chat-style-status");
+      });
+      $("chat-stop-add").addEventListener("click", () => {
+        if (chatStops.length >= 5) return;
+        let gapAt = 0;
+        for (let index = 1; index < chatStops.length - 1; index++) {
+          if (chatStops[index + 1].position - chatStops[index].position > chatStops[gapAt + 1].position - chatStops[gapAt].position) gapAt = index;
+        }
+        const before = chatStops[gapAt];
+        const after = chatStops[gapAt + 1];
+        const rgb = hex => [0, 2, 4].map(at => parseInt(hex.slice(at, at + 2), 16));
+        const mixed = rgb(before.color).map((part, index) => Math.round((part + rgb(after.color)[index]) / 2).toString(16).padStart(2, "0")).join("");
+        chatStops.splice(gapAt + 1, 0, {color: mixed, position: Math.round((before.position + after.position) / 2)});
+        renderChatStops();
+        paintChatPreview();
+      });
+      $("chat-style-swap").addEventListener("click", () => {
+        chatStops = chatStops.slice().reverse().map(stop => ({color: stop.color, position: 100 - stop.position}));
+        renderChatStops();
+        paintChatPreview();
+      });
+      $("chat-style-random").addEventListener("click", () => {
+        const randomColour = () => Math.floor(Math.random() * 0x1000000).toString(16).padStart(6, "0");
+        chatStops.forEach(stop => { stop.color = randomColour(); });
+        renderChatStops();
+        paintChatPreview();
+      });
+      $("chat-style-reset").addEventListener("click", async () => {
+        fillChatStyle(DEFAULT_CHAT_STYLE);
+        await act({action: "chatStyle", style: DEFAULT_CHAT_STYLE}, "chat-style-status");
+      });
 
       // off to Discord's sign-in; it comes back to /account?discord=<how it went>
       $("discord-link").addEventListener("click", () => {

@@ -77,6 +77,9 @@ package gui
       
       public function destroy() : void
       {
+         // Never leave the editor's full-screen layer behind to swallow
+         // clicks after Settings is closed by another path.
+         ItemWindowToggle.closeChatBubbleEditor();
          removeEventListeners();
          _popupLayer.removeChild(_mySettings);
          _closeCallback = null;
@@ -174,6 +177,15 @@ package gui
             "iconFrame":"buddyRequest",
             "labelLabel":"Chat Filter",
             "btnLabel":"Open"
+         },{
+            // Chat appearance is account-wide; this opens the centered
+            // in-game editor rather than burying it in the emoji picker.
+            "type":TOGGLE_TYPE_JOIN,
+            "frame":"chatBubble",
+            // Reuse Predict Chat's ABC artwork and keep it in its on state.
+            "iconFrame":"predictTxt",
+            "labelLabel":"Chat Bubble",
+            "btnLabel":"Customize"
          },{
             "type":TOGGLE_TYPE_JOIN,
             "frame":"themeMenu",

@@ -158,6 +158,17 @@ const run = async () => {
   assert.deepStrictEqual((await b.nextXt("uc")).slice(1), [roomId, String(bobId), "hi & bye", "0"]);
   b.send(`<msg t='sys'><body action='pubMsg' r='${roomId}'><txt><![CDATA[7%2]]></txt></body></msg>`); // emote: not echoed
   assert.deepStrictEqual((await a.nextXt("uc")).slice(3), ["7", "2"]);
+
+  // A saved bubble style is acknowledged with every customization field and
+  // travels with the next public line so every patched client renders it.
+  const chatStyle = ["112233", "445566", "ffffff", "abcdef", "85", "flow", "150", "radial", "225", "75", "2", "112233:0;ff0069:45;445566:100"];
+  b.xt("xcs", roomId, ...chatStyle);
+  assert.deepStrictEqual((await b.nextXt("xcs")).slice(2), chatStyle);
+  b.send(`<msg t='sys'><body action='pubMsg' r='${roomId}'><txt><![CDATA[styled%0]]></txt></body></msg>`);
+  const styledPacket = [roomId, String(bobId), "styled", "0", "", chatStyle.join(",")];
+  assert.deepStrictEqual((await a.nextXt("uc")).slice(1), styledPacket);
+  assert.deepStrictEqual((await b.nextXt("uc")).slice(1), styledPacket);
+
   // Actions are sent to every other player in the room. The sender has
   // already applied the action locally, so it is not echoed back to them.
   b.send(`<msg t='sys'><body action='pubMsg' r='${roomId}'><txt><![CDATA[:sitS:%3%m1]]></txt></body></msg>`);

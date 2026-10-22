@@ -229,6 +229,11 @@ package avatar
       
       private var _chatBalloon:ChatBalloon;
 
+      // Set while the normal uc packet is handled, immediately before its
+      // message is drawn. Keeping setMessage's original arguments preserves
+      // the game's pending-message and chat-history behaviour.
+      private var _nextChatStyle:String = "";
+
       // "..." where the chat bubble goes, while the player is typing
       // (AJClient.onTyping). gone when a line arrives, when they stop, or
       // TYPING_SHOWN ms after they last said they were, if a "stopped" is lost.
@@ -1176,6 +1181,11 @@ package avatar
          }
       }
 
+      public function setChatStyle(param1:String) : void
+      {
+         _nextChatStyle = param1;
+      }
+
       public function setMessage(param1:String, param2:int) : void
       {
          var _loc3_:Boolean = false;
@@ -1191,8 +1201,9 @@ package avatar
             }
             _loc3_ = true;
          }
-         _chatBalloon.setText(param1,_loc3_);
-         updateOffScreenChat(param1,_loc3_);
+         _chatBalloon.setText(param1,_loc3_,true,_nextChatStyle);
+         updateOffScreenChat(param1,_loc3_,_nextChatStyle);
+         _nextChatStyle = "";
       }
       
       public function setCustomAdventureMessage(param1:String, param2:String, param3:int, param4:int, param5:Boolean = false) : void
@@ -2593,11 +2604,11 @@ package avatar
          _secondaryEmot.y = -235 * _loc1_;
       }
       
-      private function updateOffScreenChat(param1:String, param2:Boolean) : void
+      private function updateOffScreenChat(param1:String, param2:Boolean, param3:String = "") : void
       {
          if(shouldShowOffscreen() && gMainFrame.userInfo.myUserName != _avatar.userName && _hudViewHolder)
          {
-            _hudViewHolder.questChatBalloon.setText(param1,param2,false);
+            _hudViewHolder.questChatBalloon.setText(param1,param2,false,param3);
          }
       }
       
