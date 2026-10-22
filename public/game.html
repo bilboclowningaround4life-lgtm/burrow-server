@@ -135,6 +135,18 @@
       #browser-address:focus {
         border-color: #7f6744;
       }
+      /* a site the client keeps out of the theatre (its own list): offered
+         in the player's own browser instead */
+      #browser-blocked {
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font: 400 calc(12 * var(--px)) / 1 Arial, Helvetica, sans-serif;
+        color: #3d2716;
+        cursor: text;
+      }
       #browser-bar .aj-button {
         min-width: 0;
         font-size: calc(12 * var(--px));
@@ -258,7 +270,9 @@
         <button type="button" id="browser-forward" class="aj-round" aria-label="Forward" disabled>&#9654;</button>
         <button type="button" id="browser-reload" class="aj-round" aria-label="Reload">&#8635;</button>
         <input id="browser-address" type="text" placeholder="Search or type an address" autocomplete="off" spellcheck="false" aria-label="Address">
-        <button type="submit" class="aj-button go">Go</button>
+        <button type="submit" id="browser-go" class="aj-button go">Go</button>
+        <span id="browser-blocked" role="status" hidden></span>
+        <button type="button" id="browser-elsewhere" class="aj-button go" hidden>Open in your browser</button>
         <button type="button" id="browser-close" class="aj-round" aria-label="Close the browser">&times;</button>
       </form>
       <form id="own-video-box" class="aj-box" hidden>
@@ -729,6 +743,10 @@
         let roomPlaying = false;
         let where = null; // the last place told, without `shown`
         let told = "";
+        // an address the client would not show here (the old browser engine
+        // it needs for Flash shows only the sites it lists): the bar offers
+        // to open it in the player's own browser instead. "" when none.
+        let elsewhere = "";
 
         const tell = message => window.ipc.sendToHost("browser", message);
         const placeMessage = () => ({...where, shown: open && theatreScreen !== null && !roomPlaying});
@@ -760,6 +778,24 @@
           opener.hidden = !allowed;
           pills.hidden = open;
           bar.hidden = !open;
+          address.hidden = elsewhere !== "";
+          $("browser-go").hidden = elsewhere !== "";
+          $("browser-blocked").hidden = elsewhere === "";
+          $("browser-elsewhere").hidden = elsewhere === "";
+        };
+
+        const showElsewhere = (url, sites) => {
+          let host = "";
+          try {
+            host = new URL(url).hostname;
+          }
+          catch (err) {
+            url = "";
+          }
+          elsewhere = url;
+          $("browser-blocked").textContent = elsewhere ? `${host} opens in your own browser, not here.` : "";
+          $("browser-blocked").title = sites.length ? `The theatre shows only ${sites.join(", ")}.` : "";
+          show();
         };
 
         const close = () => {
@@ -768,6 +804,7 @@
           }
           open = false;
           told = "";
+          elsewhere = "";
           tell({action: "close"});
           show();
         };
@@ -782,6 +819,18 @@
           address.focus();
         });
         $("browser-close").addEventListener("click", close);
+        // the client opens http and https addresses in the system browser
+        $("browser-elsewhere").addEventListener("click", () => {
+          if (/^https?:\/\//.test(elsewhere)) {
+            window.ipc.sendToHost("openPage", elsewhere);
+          }
+          showElsewhere("", []);
+        });
+        // back to the address, to go somewhere else
+        $("browser-blocked").addEventListener("click", () => {
+          showElsewhere("", []);
+          address.focus();
+        });
         $("browser-back").addEventListener("click", () => tell({action: "back"}));
         $("browser-forward").addEventListener("click", () => tell({action: "forward"}));
         $("browser-reload").addEventListener("click", () => tell({action: "reload"}));
@@ -816,6 +865,10 @@
           }
           $("browser-back").disabled = state.back !== true;
           $("browser-forward").disabled = state.forward !== true;
+          const blocked = typeof state.blocked === "string" && /^https?:\/\//.test(state.blocked) ? state.blocked : "";
+          if (blocked !== elsewhere) {
+            showElsewhere(blocked, Array.isArray(state.sites) ? state.sites.map(String).slice(0, 10) : []);
+          }
         });
 
         return {
