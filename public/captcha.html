@@ -25,17 +25,21 @@
         -webkit-font-smoothing: antialiased;
       }
       #status { margin: 0; text-align: center; }
+      button { display: none; border: 1px solid #8c8c8c; border-radius: 5px; padding: 6px 12px; background: transparent; color: #ddd; font: inherit; cursor: pointer; }
+      button.show { display: block; }
     </style>
   </head>
   <body>
     <div id="widget"></div>
     <p id="status" role="status">Checking…</p>
+    <button id="retry" type="button">Try again</button>
     <script src="/captcha.js"></script>
     <script>
       "use strict";
 
       const action = new URLSearchParams(location.search).get("action") === "signup" ? "signup" : "login";
       const status = document.getElementById("status");
+      const retry = document.getElementById("retry");
       const done = token => {
         if (window.burrowCaptcha) {
           window.burrowCaptcha.done(token);
@@ -53,10 +57,12 @@
         }});
         check.answer().then(token => {
           if (!token) {
-            status.textContent = "Captcha failed. Close this and try again.";
+            status.textContent = "Captcha could not load. Check your connection or content blocker.";
+            retry.classList.add("show");
           }
         });
       }
+      retry.addEventListener("click", () => location.reload());
     </script>
   </body>
 </html>

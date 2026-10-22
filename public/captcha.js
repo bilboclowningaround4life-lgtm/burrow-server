@@ -10,14 +10,29 @@
 // captcha.FAILED then), and check.reset() after it: an answer is good once.
 window.captcha = (() => {
   const siteKey = "{{siteKey}}";
+  const LOAD_TIMEOUT_MS = 15000;
   let loading = null;
 
   const load = () => {
     loading = loading || new Promise((resolve, reject) => {
       const script = document.createElement("script");
       script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
-      script.onload = () => resolve(window.turnstile);
+      const timer = setTimeout(() => {
+        loading = null;
+        reject(new Error("the captcha took too long to load"));
+      }, LOAD_TIMEOUT_MS);
+      script.onload = () => {
+        clearTimeout(timer);
+        if (window.turnstile && typeof window.turnstile.render === "function") {
+          resolve(window.turnstile);
+        }
+        else {
+          loading = null;
+          reject(new Error("the captcha did not start"));
+        }
+      };
       script.onerror = () => {
+        clearTimeout(timer);
         loading = null;
         reject(new Error("the captcha did not load"));
       };
@@ -44,21 +59,27 @@ window.captcha = (() => {
     };
     if (siteKey) {
       load().then(turnstile => {
-        widget = turnstile.render(element, {
-          sitekey: siteKey,
-          action,
-          theme: "dark",
-          appearance: options.appearance || "interaction-only",
-          callback: settle,
-          "expired-callback": () => {
-            answer = null;
-          },
-          // its code is cloudflare's (110200: this site's name is not on the widget)
-          "error-callback": code => {
-            console.log(`captcha error ${code}`);
-            settle("");
-          },
-        });
+        try {
+          widget = turnstile.render(element, {
+            sitekey: siteKey,
+            action,
+            theme: "dark",
+            appearance: options.appearance || "interaction-only",
+            callback: settle,
+            "expired-callback": () => {
+              answer = null;
+            },
+            // its code is cloudflare's (110200: this site's name is not on the widget)
+            "error-callback": code => {
+              console.log(`captcha error ${code}`);
+              settle("");
+            },
+          });
+        }
+        catch (err) {
+          console.log(`captcha could not start: ${err.message}`);
+          settle("");
+        }
       }, () => settle(""));
     }
     return {
@@ -79,5 +100,5 @@ window.captcha = (() => {
     };
   };
 
-  return {on: Boolean(siteKey), mount, FAILED: "Captcha could not load. Reload the page."};
+  return {on: Boolean(siteKey), mount, FAILED: "Captcha could not load. Check your connection or content blocker, then reload."};
 })();

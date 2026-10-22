@@ -101,6 +101,10 @@ module.exports = {
   // tried or an account is made, with both set. off without them.
   turnstile: env.AJ_TURNSTILE_SITE_KEY && env.AJ_TURNSTILE_SECRET
     ? {siteKey: env.AJ_TURNSTILE_SITE_KEY, secret: env.AJ_TURNSTILE_SECRET} : null,
+  // A stalled CAPTCHA provider must not consume all of the VPS's outbound
+  // sockets.  This only limits simultaneous verification requests; normal
+  // players use one, and a rejected request can safely be retried.
+  maxConcurrentCaptchaChecks: Math.max(1, Math.min(100, Number(env.AJ_CAPTCHA_MAX_CONCURRENT) || 24)),
 
   // Account-recovery mail is delivered to this HTTPS webhook.  It receives
   // {to, subject, text}; point it at the transactional-mail provider or
