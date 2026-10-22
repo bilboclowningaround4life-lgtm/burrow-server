@@ -658,7 +658,8 @@ const run = async () => {
     login_choices: {accountType: 0, isGuide: true, membershipDays: 12, isModerator: "yes"}})).json();
   assert.strictEqual((await (await fetch(`${BASE}/player`, {headers: {Authorization: `Bearer ${chosen.auth_token}`}})).json()).game_account_type, 0);
   a.xt("ag", denId, "Erin", 0);
-  assert.deepStrictEqual((await a.untilXt("ag")).slice(5, 7), ["0", "1"]); // account type, guide
+  // account type, guide: asking to be a guide is refused unless the admin made them one
+  assert.deepStrictEqual((await a.untilXt("ag")).slice(5, 7), ["0", "0"]);
   await postJson(`${BASE}/authenticate`, {username: "Erin", password: "KettlePass05"}); // and back to normal
   a.xt("ag", denId, "Erin", 0);
   assert.deepStrictEqual((await a.untilXt("ag")).slice(5, 7), ["2", "0"]);
