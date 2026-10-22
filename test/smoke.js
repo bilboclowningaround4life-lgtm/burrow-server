@@ -336,6 +336,10 @@ const run = async () => {
   assert.deepStrictEqual(switched.slice(2, 4).concat(switched.slice(4, 8)), ["1", String(aliceId), aa[3], aa[4], "-1", "4"]);
   assert.strictEqual(switched[11], "15136|15224|15299");
   assert.strictEqual((await c.nextXt("as")).length, switched.length + 7);
+  // The switch is followed by the animal's data and its full item list, so
+  // that the editor can open on the new animal (lib/avatars.js "as").
+  assert.strictEqual((await a.nextXt("ad"))[2], "Alice");
+  assert.strictEqual((await a.nextXt("il"))[2], "0");
   a.xt("al", denId, "Alice");
   assert.deepStrictEqual((await a.nextXt("al")).slice(5, 7), ["2", aa[3]]);
   a.xt("ak", denId, aa[3]); // cannot remove the animal in use
