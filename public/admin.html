@@ -490,6 +490,8 @@
             <input id="discord-status-title" maxlength="80" placeholder="Burrow status" aria-label="Discord public status-card title">
             <label for="discord-status-note">Status message</label>
             <textarea id="discord-status-note" rows="3" maxlength="500" placeholder="Optional message shown above the live player and moderation counts." aria-label="Discord public status-card message"></textarea>
+            <label for="discord-status-banner">Banner image URL</label>
+            <input id="discord-status-banner" type="url" maxlength="500" placeholder="https://… (leave blank for no banner)" aria-label="Discord public status-card banner image URL">
             <div class="send-row">
               <button class="primary" type="submit">Save status card</button>
               <button type="button" id="discord-status-publish">Publish now</button>
@@ -1328,10 +1330,11 @@
           ? "Credentials and webhook secrets are intentionally never shown in this dashboard."
           : "Add the missing environment variables to the service that starts Burrow; dashboard settings cannot store bot secrets.";
         $("discord-bot-status").classList.toggle("bad", !configured || !data.connected);
-        const editingStatusCard = ["discord-status-title", "discord-status-note"].includes(document.activeElement && document.activeElement.id);
+        const editingStatusCard = ["discord-status-title", "discord-status-note", "discord-status-banner"].includes(document.activeElement && document.activeElement.id);
         if (!editingStatusCard) {
           $("discord-status-title").value = data.statusCard && data.statusCard.title || "Burrow status";
           $("discord-status-note").value = data.statusCard && data.statusCard.note || "";
+          $("discord-status-banner").value = data.statusCard && data.statusCard.banner || "";
         }
         const editingRouting = document.activeElement && (document.activeElement.dataset.discordChannel || document.activeElement.id === "discord-github-repository");
         if (!editingRouting) {
@@ -1444,12 +1447,13 @@
         event.preventDefault();
         const button = event.submitter;
         if (button) button.disabled = true;
-        const result = await api("discord/status", {title: $("discord-status-title").value, note: $("discord-status-note").value});
+        const result = await api("discord/status", {title: $("discord-status-title").value, note: $("discord-status-note").value, banner: $("discord-status-banner").value});
         if (button) button.disabled = false;
         setStatus($("discord-status-card-result"), said(result), !result.ok);
         if (result.ok && result.data.statusCard) {
           $("discord-status-title").value = result.data.statusCard.title;
           $("discord-status-note").value = result.data.statusCard.note;
+          $("discord-status-banner").value = result.data.statusCard.banner;
         }
       });
 
