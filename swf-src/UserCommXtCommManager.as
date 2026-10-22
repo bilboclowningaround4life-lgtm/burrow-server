@@ -777,6 +777,20 @@ package avatar
                         _loc2_ = EmoticonUtility.stringForId(int(_loc2_));
                         break;
                      case 3:
+                        // "sja:<anim>,<flip>": an animation that is not one of
+                        // the emote-bar actions (any id the client has, 1-255),
+                        // sent as an action message by modded clients. The
+                        // normal client finds no action for it and drops it.
+                        if(_loc2_.indexOf("sja:") == 0)
+                        {
+                           _loc10_ = _loc2_.substr(4).split(",");
+                           _loc12_ = int(_loc10_[0]);
+                           if(_loc19_ != gMainFrame.server.userId && _loc12_ > 0 && _loc12_ <= 255 && !MinigameManager.inMinigame() && AvatarManager.avatarViewList[_loc19_])
+                           {
+                              AvatarManager.avatarViewList[_loc19_].holdIdleAnim(_loc12_,_loc10_[1] == "1");
+                           }
+                           return;
+                        }
                         _loc5_ = _actionMgr.matchActionString(_loc2_);
                         if(_loc5_)
                         {

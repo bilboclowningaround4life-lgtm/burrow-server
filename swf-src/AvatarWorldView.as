@@ -805,6 +805,16 @@ package avatar
          return false;
       }
       
+      // plays an animation and keeps it as this avatar's idle, so the client's
+      // own idle refreshes don't put the avatar back to standing. Walking or
+      // an action replaces it, as with any idle.
+      public function holdIdleAnim(param1:int, param2:Boolean) : void
+      {
+         _lastIdleAnim = param1;
+         _lastIdleFlip = param2;
+         playAnim(param1,param2);
+      }
+
       public function getBaseIdle() : int
       {
          return _roomType == 1 ? 32 : 14;
