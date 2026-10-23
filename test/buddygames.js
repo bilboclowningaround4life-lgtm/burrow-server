@@ -11,7 +11,7 @@ const GAME_PORT = 19342;
 const BASE = `http://127.0.0.1:${HTTP_PORT}`;
 const TOWNSHIP = "jamaa_township.room_main#1";
 const {postJson} = harness;
-const GAMES = {ticTacToe: 89, fourGems: 90, rockPaperScissors: 91, shellGame: 92, pairs: 93, scooped: 95, bowling: 98, marbles: 101};
+const GAMES = {ticTacToe: 1, fourGems: 31, rockPaperScissors: 32, shellGame: 38, pairs: 101, scooped: 53, bowling: 108, marbles: 45};
 
 const arrive = async username => {
   const auth = await (await postJson(`${BASE}/authenticate`, {username, password: "KettlePass01"})).json();
@@ -48,22 +48,22 @@ const run = async () => {
   const perGame = (told.length - 3) / 8;
   assert.strictEqual(perGame, 19);
   const first = told.slice(3, 3 + perGame);
-  assert.deepStrictEqual([first[0], first[2], first[4], first[5], first[7], first[8], first[12], first[17]], ["89", "PVP_TicTacToe", "2", "2", "0", "5063", "1", "5063"]);
+  assert.deepStrictEqual([first[0], first[2], first[4], first[5], first[7], first[8], first[12], first[17]], ["1", "PVP_TicTacToe", "2", "2", "0", "5055", "1", "5063"]);
 
   // --- invitations
   // Ann asks Ben; he says no, and she is told.
   a.xt("mp", ann.roomId, GAMES.ticTacToe, 0, "Ben");
-  assert.deepStrictEqual((await b.nextXt("mp")).slice(2), ["89", "0", "Ann", "1"]);
+  assert.deepStrictEqual((await b.nextXt("mp")).slice(2), ["1", "0", "Ann", "1"]);
   // while that is open neither can be asked, nor ask, anything else.
   c.xt("mp", cat.roomId, GAMES.pairs, 0, "Ann");
-  assert.deepStrictEqual((await c.nextXt("mp")).slice(2), ["93", "1"]);
+  assert.deepStrictEqual((await c.nextXt("mp")).slice(2), ["101", "1"]);
   b.xt("mp", ben.roomId, GAMES.ticTacToe, 1);
-  assert.deepStrictEqual((await a.nextXt("mp")).slice(2), ["89", "1"]);
+  assert.deepStrictEqual((await a.nextXt("mp")).slice(2), ["1", "1"]);
   // asked again, and taken back.
   a.xt("mp", ann.roomId, GAMES.ticTacToe, 0, "Ben");
   await b.nextXt("mp");
   a.xt("mp", ann.roomId, GAMES.ticTacToe, 1);
-  assert.deepStrictEqual((await b.nextXt("mp")).slice(2), ["89", "1"]);
+  assert.deepStrictEqual((await b.nextXt("mp")).slice(2), ["1", "1"]);
   // nobody of that name, a game that is not a buddy game, oneself: all "no".
   for (const [game, name] of [[GAMES.ticTacToe, "Nobody"], [4, "Ben"], [GAMES.ticTacToe, "Ann"]]) {
     a.xt("mp", ann.roomId, game, 0, name);
@@ -301,13 +301,13 @@ const run = async () => {
   const bubble = (client, me, word, game) => client.send(`<msg t='sys'><body action='pubMsg' r='${me.roomId}'><txt><![CDATA[${word}%12%${game}]]></txt></body></msg>`);
   bubble(a, ann, "on", GAMES.pairs);
   for (const client of [a, b, c]) {
-    assert.deepStrictEqual((await client.untilXt("uc")).slice(1), [ann.roomId, ann.id, "on|93", "12", "0"]);
+    assert.deepStrictEqual((await client.untilXt("uc")).slice(1), [ann.roomId, ann.id, "on|101", "12", "0"]);
   }
   // A game that is not the one in the bubble, or a bubble nobody has up: "no".
   c.xt("mcp", cat.roomId, GAMES.ticTacToe, 0, "Ann");
-  assert.deepStrictEqual((await c.untilXt("mp")).slice(2), ["89", "1"]);
+  assert.deepStrictEqual((await c.untilXt("mp")).slice(2), ["1", "1"]);
   c.xt("mcp", cat.roomId, GAMES.pairs, 0, "Ben");
-  assert.deepStrictEqual((await c.untilXt("mp")).slice(2), ["93", "1"]);
+  assert.deepStrictEqual((await c.untilXt("mp")).slice(2), ["101", "1"]);
   // Ben clicks it: the game starts for the two of them and the bubble goes
   // for Cat. Ann hears her own "off" only once the game is over.
   b.xt("mcp", ben.roomId, GAMES.pairs, 0, "Ann");
@@ -319,7 +319,7 @@ const run = async () => {
   }
   // too late for Cat
   c.xt("mcp", cat.roomId, GAMES.pairs, 0, "Ann");
-  assert.deepStrictEqual((await c.untilXt("mp")).slice(2), ["93", "1"]);
+  assert.deepStrictEqual((await c.untilXt("mp")).slice(2), ["101", "1"]);
   // while in it, Ann's client turning the bubble off is not answered yet
   bubble(a, ann, "off", 0);
   b.xt("rl", pairsRoom, pairsRoom);
@@ -327,8 +327,8 @@ const run = async () => {
   assert.deepStrictEqual((await a.untilXt("uc")).slice(1), [ann.roomId, ann.id, "off", "12"]);
   // put up and taken down again outside a game: answered at once
   bubble(a, ann, "on", GAMES.bowling);
-  assert.deepStrictEqual((await a.untilXt("uc")).slice(3), ["on|98", "12", "0"]);
-  assert.deepStrictEqual((await c.untilXt("uc")).slice(3), ["on|98", "12", "0"]);
+  assert.deepStrictEqual((await a.untilXt("uc")).slice(3), ["on|108", "12", "0"]);
+  assert.deepStrictEqual((await c.untilXt("uc")).slice(3), ["on|108", "12", "0"]);
   bubble(a, ann, "off", 0);
   assert.deepStrictEqual((await a.untilXt("uc")).slice(3), ["off", "12"]);
   assert.deepStrictEqual((await c.untilXt("uc")).slice(3), ["off", "12"]);
@@ -351,7 +351,7 @@ const run = async () => {
   do {
     seen = await dee.client.untilXt("uc");
   } while (seen[2] !== ann.id);
-  assert.deepStrictEqual(seen.slice(3), ["on|92", "12", "0"]);
+  assert.deepStrictEqual(seen.slice(3), ["on|38", "12", "0"]);
   bubble(a, ann, "off", 0);
   await a.untilXt("uc");
   dee.client.socket.destroy();
@@ -367,7 +367,7 @@ const run = async () => {
   a.xt("mp", ann.roomId, GAMES.marbles, 0, "Ben");
   await b.untilXt("mp");
   a.socket.destroy();
-  assert.deepStrictEqual((await b.untilXt("mp")).slice(2), ["101", "1"]);
+  assert.deepStrictEqual((await b.untilXt("mp")).slice(2), ["45", "1"]);
 
   // --- a room game played together (lib/minigames.js MULTIPLAYER): Gem
   // Breaker offers its waiting list, Ben waits in the room, Cat joins, both

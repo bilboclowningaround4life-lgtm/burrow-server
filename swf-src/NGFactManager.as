@@ -809,6 +809,11 @@ package gui
       
       private static function reloadGenericFactPopup(param1:Object) : void
       {
+         // a fact had by its id is in no list: the arrows have nowhere to go
+         if(param1 == null)
+         {
+            return;
+         }
          factCloseHandler(null);
          if(param1.type == 18 || param1.type == 12 || param1.type == 17 || param1.type == 9 || param1.type == 19)
          {
@@ -824,6 +829,11 @@ package gui
       {
          var _loc3_:String = null;
          var _loc5_:Array = null;
+         // a fact had by its id is in no list: the arrows have nowhere to go
+         if(param1 == null)
+         {
+            return;
+         }
          _factPopup.index = param1.index;
          _factPopup.bitIdx = param1.bitIdx;
          while(_factPopup.imgBlock.numChildren > 0)
@@ -1022,10 +1032,12 @@ package gui
          }
          DarkenManager.showLoadingSpiral(false);
          _loc2_ = _genericFactDefList[_genericFactId];
-         // the fact lists came from the official server; one this server has
-         // no entry for opens nothing (#1009)
+         // the fact lists came from the official server, and this one
+         // answers them empty: the fact is had by its id instead, from the
+         // CDN's factDefs (requestFactInfo), as the game's other facts are
          if(_loc2_ == null)
          {
+            requestFactInfo([_genericFactId]);
             return;
          }
          if(_loc2_.type == 18 || _loc2_.type == 12 || _loc2_.type == 17 || _loc2_.type == 9 || _loc2_.type == 19)
@@ -1062,6 +1074,14 @@ package gui
             _museumFactDefList[_loc2_.id] = _loc2_;
             _museumFactDefIndexList[_loc3_] = _loc2_.id;
             _loc3_++;
+         }
+         // as above: an exhibit this server's list does not have is had by
+         // its id. opening nothing left the game behind its spinner.
+         if(_museumFactDefList[_museumRequest] == null)
+         {
+            DarkenManager.showLoadingSpiral(false);
+            requestFactInfo([_museumRequest]);
+            return;
          }
          displayMuseumEngangermentPopup(_museumFactDefList[_museumRequest]);
       }
