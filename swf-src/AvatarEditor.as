@@ -2212,6 +2212,15 @@ package gui
          if(!DenAndClothesItemSelect.moreToCome)
          {
             openCloseTradeWindow();
+            // the list drawn again with all of it: each item added went into
+            // an empty window of the list, and with many picked at once
+            // there were too few of those, so the rest were not shown
+            if(_itemTradeWindows && avEditor.tradeBtnUp.visible)
+            {
+               _itemTradeWindows.destroy();
+               _itemTradeWindows = null;
+               createItemWindows(_currTradesArray,avEditor.itemBlock);
+            }
          }
       }
       

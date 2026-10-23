@@ -96,6 +96,8 @@ set -- \
   avatar.AvatarUtility AvatarUtility.as \
   item.Item Item.as \
   loader.DenItemHelper DenItemHelper.as \
+  game.MinigameManager MinigameManager.as \
+  game.microSmoothie.MicroSmoothie MicroSmoothie.as \
   room.DenItemHolder ../tools/decompiled/room/DenItemHolder.as
 # not in the game: added before the replace (game.ArtStudioKit is Strawberry
 # Jam's, shared by its two art studio painters; gui.SitForwardAction is the

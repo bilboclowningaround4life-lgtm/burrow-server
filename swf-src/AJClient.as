@@ -1533,6 +1533,17 @@ package
          }
       }
 
+      // "xtr": [.., .., sfsId, 1 | 0]: another player trading, or not
+      // (lib/world.js showTrading).
+      public static function onTrading(param1:Object) : void
+      {
+         var _loc2_:AvatarWorldView = AvatarManager.avatarViewList != null ? AvatarManager.avatarViewList[int(param1[2])] as AvatarWorldView : null;
+         if(_loc2_ != null)
+         {
+            _loc2_.setTrading(String(param1[3]) == "1");
+         }
+      }
+
       // "xyn": [.., .., id, text]. A yes-or-no box; the answer goes back as
       // "xyn" [id, 1 | 0].
       public static function askYesNo(param1:Object) : void

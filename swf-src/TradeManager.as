@@ -878,7 +878,9 @@ package gui
                _loc32_.dispatchEvent(new AvatarEvent("OnAvatarChanged"));
             }
             GuiManager.showHudAvt();
-            closeRequestSentPopup();
+            // the "waiting" window goes quietly: the trade went through, and
+            // its failure sound played over the success one
+            closeRequestSentPopup(false);
          }
          else
          {
@@ -2308,11 +2310,14 @@ package gui
          }
       }
       
-      private static function closeRequestSentPopup() : void
+      private static function closeRequestSentPopup(param1:Boolean = true) : void
       {
          if(_requestSentPopup && _requestSentPopup.visible)
          {
-            AJAudio.playTradeFailedSound();
+            if(param1)
+            {
+               AJAudio.playTradeFailedSound();
+            }
             DarkenManager.unDarken(_requestSentPopup);
             if(_requestSentPopup.parent == _guiLayer)
             {
