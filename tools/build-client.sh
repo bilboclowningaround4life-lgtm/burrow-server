@@ -101,6 +101,11 @@ set -- \
   gameRedemption.CodeRedemptionPopup CodeRedemptionPopup.as \
   playerWall.PlayerWallXtCommManager PlayerWallXtCommManager.as \
   playerWall.PlayerWallGui PlayerWallGui.as \
+  pet.PetManager PetManager.as \
+  adoptAPet.TierPathPopup TierPathPopup.as \
+  pet.PetBase PetBase.as \
+  game.touchPool.TouchPool TouchPool.as \
+  game.phantomsTreasure.PhantomsTreasure PhantomsTreasure.as \
   game.microSmoothie.MicroSmoothie MicroSmoothie.as \
   room.DenItemHolder ../tools/decompiled/room/DenItemHolder.as
 # not in the game: added before the replace (game.ArtStudioKit is Strawberry

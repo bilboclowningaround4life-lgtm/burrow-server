@@ -41,12 +41,15 @@ window.captcha = (() => {
     return loading;
   };
 
-  // `options`: {appearance} ("interaction-only" by default: seen only when
-  // cloudflare wants a click), {onAnswer(token)}.
+  // `options`: {appearance} ("always" by default: hidden till cloudflare
+  // wanted a click, it was taken for one that never showed), {onAnswer(token)}.
+  const MAX_RETRIES = 2; // a widget that errs is started again this often first
   const mount = (element, action, options = {}) => {
     let widget = null;
     let answer = null; // a token, "" when none could be had, null while waiting
     let waiting = [];
+    let retries = 0;
+    let starting = false;
     const settle = value => {
       answer = value;
       if (value && options.onAnswer) {
@@ -57,22 +60,38 @@ window.captcha = (() => {
       }
       waiting = [];
     };
-    if (siteKey) {
+    const start = () => {
+      if (!siteKey || starting || widget !== null) {
+        return;
+      }
+      starting = true;
       load().then(turnstile => {
+        starting = false;
         try {
           widget = turnstile.render(element, {
             sitekey: siteKey,
             action,
             theme: "dark",
-            appearance: options.appearance || "interaction-only",
-            callback: settle,
+            appearance: options.appearance || "always",
+            callback: value => {
+              retries = 0;
+              settle(value);
+            },
             "expired-callback": () => {
               answer = null;
             },
-            // its code is cloudflare's (110200: this site's name is not on the widget)
+            // its code is cloudflare's (110200: this site's name is not on
+            // the widget). many pass with a second go: it is had first.
             "error-callback": code => {
               console.log(`captcha error ${code}`);
+              if (retries < MAX_RETRIES) {
+                retries++;
+                answer = null;
+                setTimeout(() => window.turnstile.reset(widget), 1000 * retries);
+                return true;
+              }
               settle("");
+              return true;
             },
           });
         }
@@ -80,20 +99,29 @@ window.captcha = (() => {
           console.log(`captcha could not start: ${err.message}`);
           settle("");
         }
-      }, () => settle(""));
-    }
+      }, () => {
+        starting = false;
+        settle("");
+      });
+    };
+    start();
     return {
       on: Boolean(siteKey),
       answer: () => {
         if (!siteKey) {
           return Promise.resolve(undefined);
         }
+        // one that could not load is tried again when an answer is wanted
+        if (answer === "" && widget === null) {
+          answer = null;
+          start();
+        }
         return answer !== null ? Promise.resolve(answer) : new Promise(resolve => waiting.push(resolve));
       },
-      // (a widget that never loaded keeps its "" so nothing waits on it)
       reset: () => {
         if (widget !== null) {
           answer = null;
+          retries = 0;
           window.turnstile.reset(widget);
         }
       },

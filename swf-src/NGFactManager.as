@@ -702,11 +702,17 @@ package gui
          {
             _loc2_.txt.text = "";
          }
-         if(_loc2_.title != null)
+         // the Alpha HQ's bios have no title (string 0), and an id with no
+         // string throws: the popup stayed on screen with nothing able to
+         // close it. none is left as it is.
+         if(_loc2_.title != null && param1.title > 0)
          {
             LocalizationManager.translateId(_loc2_.title.txt,param1.title);
          }
-         LocalizationManager.translateId(_loc2_.txt,param1.description);
+         if(param1.description > 0)
+         {
+            LocalizationManager.translateId(_loc2_.txt,param1.description);
+         }
          if(param1.media && param1.media != 0)
          {
             _loc3_ = new MediaHelper();
@@ -724,7 +730,13 @@ package gui
             }
          }
          _loc2_.addEventListener("mouseDown",factMouseDownHandler,false,0,true);
-         if(_loc2_.nextBtn)
+         // one fact on its own (not one of a list) has no next or previous
+         if(_loc2_.nextBtn && (_genericFactDefIndexList == null || isNaN(param1.index)))
+         {
+            _loc2_.nextBtn.visible = false;
+            _loc2_.prevBtn.visible = false;
+         }
+         else if(_loc2_.nextBtn)
          {
             _loc2_.nextBtn.addEventListener("mouseDown",factNextPrevBtnHandler,false,0,true);
             _loc2_.prevBtn.addEventListener("mouseDown",factNextPrevBtnHandler,false,0,true);

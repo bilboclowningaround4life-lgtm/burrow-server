@@ -826,7 +826,22 @@ package avatar
 
       public function getBaseIdle() : int
       {
-         return _roomType == 1 ? 32 : 14;
+         return drawnSwimming() ? 32 : 14;
+      }
+      
+      // whether the animal is drawn with its swimming animations: the
+      // room's kind when it has art for both, else the one it has. a land
+      // animal in water (or a sea one on land) asked for art it has none of,
+      // and stood invisible until it did something it had art for.
+      private function drawnSwimming() : Boolean
+      {
+         var _loc1_:Boolean = _avatar == null || Utility.isLand(_avatar.enviroTypeFlag);
+         var _loc2_:Boolean = _avatar == null || Utility.isOcean(_avatar.enviroTypeFlag);
+         if(_loc1_ == _loc2_)
+         {
+            return _roomType == 1;
+         }
+         return _loc2_;
       }
       
       public function setPath(param1:Array) : void
@@ -2679,7 +2694,7 @@ package avatar
          _lastMoveAngle = _loc7_;
          var _loc8_:Object = convertToIdle(_lastMoveAngle);
          _lastIdleAnim = _loc8_.anim;
-         if(_roomType == 1)
+         if(drawnSwimming())
          {
             _lastIdleAnim = getBaseIdle();
          }
@@ -2746,7 +2761,7 @@ package avatar
                   _loc9_ = 14;
             }
          }
-         if(_roomType == 1)
+         if(drawnSwimming())
          {
             _loc9_ = 29;
          }
@@ -2839,7 +2854,7 @@ package avatar
       public function preload(param1:Function) : void
       {
          var _loc2_:Array = [];
-         if(_roomType == 1)
+         if(drawnSwimming())
          {
             _loc2_.push(29);
             _loc2_.push(32);
