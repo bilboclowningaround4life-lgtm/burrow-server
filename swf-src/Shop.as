@@ -1205,6 +1205,11 @@ package shop
       {
          var _loc4_:int = 0;
          var _loc3_:MovieClip = param1.daysLeftTag;
+         // no "X days left": an item's window here comes round every year
+         // (lib/sales.js), so a count to its end told players little but
+         // that it was going, which it mostly was not
+         _loc3_.visible = false;
+         return;
          if(!param2.isRare && !_shopToSell)
          {
             _loc4_ = Math.ceil((param2.endTime - Utility.getCurrEpochTime()) / 60 / 60 / 24);

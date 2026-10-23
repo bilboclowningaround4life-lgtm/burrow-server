@@ -2391,8 +2391,8 @@
       // moving), else drawn into a PNG that fits, smaller until it is small
       // enough. any picture this browser can open will do (WebP, AVIF, BMP...).
       // null when it cannot be read at all.
-      const PICTURE_SIDE = 512;
-      const PICTURE_BYTES = 300 * 1024;
+      const PICTURE_SIDE = 256;
+      const PICTURE_BYTES = 100 * 1024;
       const preparePicture = async file => {
         const kept = ["image/png", "image/jpeg", "image/gif"].includes(file.type);
         let image = null;
@@ -2406,7 +2406,7 @@
           image.close();
           return file;
         }
-        for (const side of [PICTURE_SIDE, 384, 256, 128]) {
+        for (const side of [PICTURE_SIDE, 192, 128, 96]) {
           const scale = Math.min(1, side / image.width, side / image.height);
           const canvas = document.createElement("canvas");
           canvas.width = Math.max(1, Math.round(image.width * scale));

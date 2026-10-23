@@ -98,6 +98,7 @@ set -- \
   loader.DenItemHelper DenItemHelper.as \
   game.MinigameManager MinigameManager.as \
   gui.FeedbackManager FeedbackManager.as \
+  gameRedemption.CodeRedemptionPopup CodeRedemptionPopup.as \
   game.microSmoothie.MicroSmoothie MicroSmoothie.as \
   room.DenItemHolder ../tools/decompiled/room/DenItemHolder.as
 # not in the game: added before the replace (game.ArtStudioKit is Strawberry

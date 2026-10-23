@@ -1059,6 +1059,34 @@
             </div>
             <p class="status" id="announce-status" role="status"></p>
           </section>
+          <section>
+            <h2>Redemption codes</h2>
+            <p class="hint">For the game's Redeem Code window (in its settings). Each account may use a code once; "uses" is how many may use it in all, 0 for any number.</p>
+            <form id="code-form">
+              <div class="row">
+                <input id="code-code" maxlength="32" placeholder="CODE" autocomplete="off" spellcheck="false" aria-label="Code" required style="text-transform:uppercase">
+                <select id="code-kind" aria-label="What it gives">
+                  <option value="clothing">Clothing</option>
+                  <option value="den">Den item</option>
+                  <option value="gems">Gems</option>
+                  <option value="diamonds">Diamonds</option>
+                </select>
+              </div>
+              <div class="row">
+                <input id="code-item" type="number" min="1" placeholder="Item id" aria-label="Item id">
+                <input id="code-color" placeholder="Colour (optional)" aria-label="Colour" autocomplete="off">
+                <input id="code-amount" type="number" min="1" placeholder="Amount" aria-label="Amount" hidden>
+                <input id="code-uses" type="number" min="0" value="0" aria-label="Uses in all" title="Uses in all, 0 for any number">
+                <button class="primary" type="submit">Make</button>
+              </div>
+            </form>
+            <p class="status" id="code-status" role="status"></p>
+            <table>
+              <thead><tr><th>Code</th><th>Gives</th><th>Used</th><th></th></tr></thead>
+              <tbody id="codes"></tbody>
+            </table>
+            <div class="empty" id="no-codes" hidden>No codes yet.</div>
+          </section>
         </div>
       </div>
 
@@ -1098,6 +1126,16 @@
             <h2>Sale dates</h2>
             <label class="check"><input id="debug-onsale" type="checkbox"> Everything on sale</label>
             <p class="status" id="debug-sale-status" role="status"></p>
+          </section>
+          <section>
+            <h2>Worlds</h2>
+            <form id="debug-worlds-form" class="row">
+              <label for="debug-worlds">How many worlds</label>
+              <input id="debug-worlds" type="number" min="1" max="10" style="width:5em">
+              <button type="submit">Set</button>
+            </form>
+            <p class="hint">Aldan, Congo, Draa and on. Takes effect at once; anyone in a world taken away is moved to Aldan.</p>
+            <p class="status" id="debug-worlds-status" role="status"></p>
           </section>
           <section>
             <h2>Theatre browser (experimental)</h2>
@@ -1176,6 +1214,35 @@
           showGate("Your session ended. Sign in again.");
         }
         return {ok: response.ok, status: response.status, data};
+      };
+
+      // the redemption codes (Messages): what each gives and how often it was used
+      const renderCodes = list => {
+        $("codes").replaceChildren(...list.map(code => {
+          const row = el("tr");
+          const gives = code.kind === "clothing" ? `Clothing ${code.item}${code.color !== null ? ` (colour ${code.color})` : ""}`
+            : code.kind === "den" ? `Den item ${code.item}` : `${code.amount.toLocaleString()} ${code.kind}`;
+          const button = el("button", "Delete");
+          button.type = "button";
+          button.addEventListener("click", async () => {
+            const result = await api("codes", {action: "remove", code: code.code});
+            setStatus($("code-status"), result.data.ok || result.data.error || "That did not work.", !result.ok);
+            if (result.ok) {
+              row.remove();
+            }
+          });
+          const cell = el("td");
+          cell.append(button);
+          row.append(el("td", code.code), el("td", gives), el("td", code.uses ? `${code.used} of ${code.uses}` : String(code.used)), cell);
+          return row;
+        }));
+        $("no-codes").hidden = list.length > 0;
+      };
+      const showCodeFields = () => {
+        const item = ["clothing", "den"].includes($("code-kind").value);
+        $("code-item").hidden = !item;
+        $("code-color").hidden = $("code-kind").value !== "clothing";
+        $("code-amount").hidden = item;
       };
 
       const setStatus = (element, text, bad = false) => {
@@ -2658,6 +2725,10 @@
         }
         $("debug-onsale").checked = data.everythingOnSale;
         $("debug-theatre-browser").checked = data.theatreBrowser;
+        if (document.activeElement !== $("debug-worlds")) {
+          $("debug-worlds").value = data.worlds;
+          $("debug-worlds").max = data.maxWorlds;
+        }
         if (debugRooms.length !== data.rooms.length) {
           debugRooms = data.rooms;
           renderDebugRooms();
@@ -2673,6 +2744,25 @@
       $("debug-theatre-browser").addEventListener("change", async () => {
         const result = await api("debug", {action: "theatreBrowser", on: $("debug-theatre-browser").checked});
         setStatus($("debug-browser-status"), result.data.ok || result.data.error || "That did not work.", !result.ok);
+      });
+      $("code-kind").addEventListener("change", showCodeFields);
+      $("code-form").addEventListener("submit", async event => {
+        event.preventDefault();
+        const result = await api("codes", {code: $("code-code").value, kind: $("code-kind").value, item: Number($("code-item").value),
+          color: $("code-color").value.trim(), amount: Number($("code-amount").value), uses: Number($("code-uses").value) || 0});
+        setStatus($("code-status"), result.data.ok || result.data.error || "That did not work.", !result.ok);
+        if (result.ok) {
+          $("code-code").value = "";
+          const codeList = await api("codes");
+          if (codeList.ok) {
+            renderCodes(codeList.data.codes);
+          }
+        }
+      });
+      $("debug-worlds-form").addEventListener("submit", async event => {
+        event.preventDefault();
+        const result = await api("debug", {action: "worlds", count: Number($("debug-worlds").value)});
+        setStatus($("debug-worlds-status"), result.data.ok || result.data.error || "That did not work.", !result.ok);
       });
       $("debug-onsale").addEventListener("change", async () => {
         const result = await api("debug", {action: "everythingOnSale", on: $("debug-onsale").checked});
@@ -2954,8 +3044,8 @@
       // moving), else drawn into a PNG that fits, smaller until it is small
       // enough. any picture this browser can open will do (WebP, AVIF, BMP...).
       // null when it cannot be read at all.
-      const PICTURE_SIDE = 512;
-      const PICTURE_BYTES = 300 * 1024;
+      const PICTURE_SIDE = 256;
+      const PICTURE_BYTES = 100 * 1024;
       const preparePicture = async file => {
         const kept = ["image/png", "image/jpeg", "image/gif"].includes(file.type);
         let image = null;
@@ -2969,7 +3059,7 @@
           image.close();
           return file;
         }
-        for (const side of [PICTURE_SIDE, 384, 256, 128]) {
+        for (const side of [PICTURE_SIDE, 192, 128, 96]) {
           const scale = Math.min(1, side / image.width, side / image.height);
           const canvas = document.createElement("canvas");
           canvas.width = Math.max(1, Math.round(image.width * scale));
@@ -3447,6 +3537,10 @@
           result = await api("messages");
           if (result.ok) {
             renderMessages(result.data);
+          }
+          const codeList = await api("codes");
+          if (codeList.ok) {
+            renderCodes(codeList.data.codes);
           }
         }
         else if (tab === "debug") {

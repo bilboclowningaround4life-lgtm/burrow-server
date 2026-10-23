@@ -265,7 +265,11 @@
 
         <section>
           <h2>Buddies</h2>
-          <div id="buddies"></div>
+          <!-- closed at first: a long list made the page slow to scroll -->
+          <details id="buddies-box" hidden>
+            <summary id="buddies-summary">Buddies</summary>
+            <div id="buddies"></div>
+          </details>
           <p class="hint" id="no-buddies" hidden>No buddies yet.</p>
           <p class="status" id="buddy-status" role="status"></p>
         </section>
@@ -316,7 +320,10 @@
 
         <section>
           <h2>Den visitors</h2>
-          <div id="visits"></div>
+          <details id="visits-box" hidden>
+            <summary id="visits-summary">Visitors</summary>
+            <div id="visits"></div>
+          </details>
           <p class="hint" id="no-visits" hidden>No visitors yet.</p>
         </section>
 
@@ -863,8 +870,8 @@
       // moving), else drawn into a PNG that fits, smaller until it is small
       // enough. any picture this browser can open will do (WebP, AVIF, BMP...).
       // null when it cannot be read at all.
-      const PICTURE_SIDE = 512;
-      const PICTURE_BYTES = 300 * 1024;
+      const PICTURE_SIDE = 256;
+      const PICTURE_BYTES = 100 * 1024;
       const preparePicture = async file => {
         const kept = ["image/png", "image/jpeg", "image/gif"].includes(file.type);
         let image = null;
@@ -878,7 +885,7 @@
           image.close();
           return file;
         }
-        for (const side of [PICTURE_SIDE, 384, 256, 128]) {
+        for (const side of [PICTURE_SIDE, 192, 128, 96]) {
           const scale = Math.min(1, side / image.width, side / image.height);
           const canvas = document.createElement("canvas");
           canvas.width = Math.max(1, Math.round(image.width * scale));
@@ -1022,6 +1029,8 @@
           }));
         }
         $("no-buddies").hidden = account.buddyList.length > 0;
+        $("buddies-box").hidden = account.buddyList.length === 0;
+        $("buddies-summary").textContent = `Show ${account.buddyList.length.toLocaleString()} ${account.buddyList.length === 1 ? "buddy" : "buddies"}`;
 
         $("blocked").replaceChildren(...account.blocked.map(name => {
           const row = el("div", undefined, "switch");
@@ -1067,6 +1076,8 @@
           return entry;
         }));
         $("no-visits").hidden = account.denVisits.length > 0;
+        $("visits-box").hidden = account.denVisits.length === 0;
+        $("visits-summary").textContent = `Show ${account.denVisits.length.toLocaleString()} ${account.denVisits.length === 1 ? "visit" : "visits"}`;
 
         $("achievement-summary").textContent = `${account.achievements.earned} of ${account.achievements.of} earned.`;
         $("achievements").replaceChildren(...account.achievements.counted.map(counted => {

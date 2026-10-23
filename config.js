@@ -316,6 +316,9 @@ module.exports = {
   // world N after the Nth name of its own list (551 Aldan, 552 Congo...,
   // generic list 16), so the names here are only for the panels and logs.
   // AJ_WORLDS: how many (the tests' is one).
+  // the admin panel can change how many while the server runs (lib/world.js
+  // setWorldCount), which then outlasts a restart.
+  worldNames: ["Aldan", "Congo", "Draa", "Grande", "Kama", "Nile", "Pecos", "Ramu", "Tigris", "Zambezi"],
   shards: ["Aldan", "Congo", "Draa", "Grande", "Kama", "Nile", "Pecos", "Ramu", "Tigris", "Zambezi"]
     .slice(0, Math.min(10, Math.max(1, Number(env.AJ_WORLDS) || 2))).map((name, i) => ({id: i + 1, name})),
   maxUsersPerRoom: 40,

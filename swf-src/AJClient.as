@@ -4762,9 +4762,9 @@ package
       // the picture read: sent as it is when the server takes it so (a PNG,
       // JPEG or GIF small enough, or a BMP, which the server makes a PNG); one
       // too big is drawn smaller here and sent as a PNG.
-      private static const MAKER_PICTURE_SIDE:int = 512;
+      private static const MAKER_PICTURE_SIDE:int = 256;
 
-      private static const MAKER_PICTURE_BYTES:int = 300 * 1024;
+      private static const MAKER_PICTURE_BYTES:int = 100 * 1024;
 
       private function onMakerPictureRead(param1:Event) : void
       {
@@ -4804,7 +4804,7 @@ package
       private static function shrunkPng(param1:BitmapData) : ByteArray
       {
          var _loc2_:ByteArray = null;
-         for each(var _loc3_:int in [MAKER_PICTURE_SIDE,384,256,128])
+         for each(var _loc3_:int in [MAKER_PICTURE_SIDE,192,128,96])
          {
             var _loc4_:Number = Math.min(1,_loc3_ / param1.width,_loc3_ / param1.height);
             var _loc5_:BitmapData = new BitmapData(Math.max(1,Math.round(param1.width * _loc4_)),Math.max(1,Math.round(param1.height * _loc4_)),true,0);
