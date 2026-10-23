@@ -1958,7 +1958,7 @@
             stateCell.append(el("span", "Hardware banned", "tag bad"));
           }
           row.append(el("td", alt.username), stateCell,
-            el("td", alt.devices.length ? `${alt.devices.map(kind => KIND_NAMES[kind] || kind).join(", ")}${alt.weak ? " (weak)" : ""}` : "—"),
+            el("td", alt.devices.length ? `${alt.devices.map(kind => KIND_NAMES[kind] || kind).join(", ")}` : "—"),
             el("td", alt.addresses ? String(alt.addresses) : "—", "num"));
           row.addEventListener("click", () => openAccount(alt.username));
           return row;
