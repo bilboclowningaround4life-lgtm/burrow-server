@@ -96,7 +96,6 @@ set -- \
   avatar.AvatarUtility AvatarUtility.as \
   item.Item Item.as \
   loader.DenItemHelper DenItemHelper.as \
-  game.MinigameManager MinigameManager.as \
   gui.FeedbackManager FeedbackManager.as \
   gameRedemption.CodeRedemptionPopup CodeRedemptionPopup.as \
   playerWall.PlayerWallXtCommManager PlayerWallXtCommManager.as \
