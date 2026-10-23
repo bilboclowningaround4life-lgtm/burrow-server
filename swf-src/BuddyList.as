@@ -167,7 +167,7 @@ package buddy
       private static function onHasReferralAssociationResponse(param1:int) : void
       {
          _hasRequestedReferralAssociation = true;
-         _buddyListReferFriendBg.visible = true;
+         _buddyListReferFriendBg.visible = param1 == 1;
          if(param1 == 1)
          {
             _buddyListReferAFriendBtn.visible = true;
@@ -175,8 +175,10 @@ package buddy
          }
          else
          {
+            // "How did you hear?" is never offered here: its window soft
+            // locked the game, and nothing reads its answer.
             _buddyListReferAFriendBtn.visible = false;
-            _buddyListHowDidYouHearBtn.visible = true;
+            _buddyListHowDidYouHearBtn.visible = false;
          }
          if(_buddyListPopup.visible)
          {

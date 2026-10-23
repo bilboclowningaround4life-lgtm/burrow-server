@@ -1,6 +1,7 @@
 package gui
 {
    import collection.StreamDefCollection;
+   import flash.external.ExternalInterface;
    import movie.MovieManager;
    import quest.QuestManager;
    import room.RoomManagerWorld;
@@ -50,10 +51,17 @@ package gui
          var _loc4_:Boolean = false;
          // the video lists came from the official server; this one answers
          // them empty, and a player with nothing to play threw (#1009 in
-         // VideoPlayerOSMF.playNonStreaming)
+         // VideoPlayerOSMF.playNonStreaming). a video spot clicked opens the
+         // game page's video box instead (game.html ajVideoSpot), for a link
+         // of the player's own; the trade list's help plays a video of ours.
+         // a list the room plays by itself ("autoplay") opens nothing.
          if(param2 == null || param2.length == 0)
          {
             DarkenManager.showLoadingSpiral(false);
+            if(param3 == null || param3.msg == null || String(param3.msg).indexOf("autoplay") == -1)
+            {
+               openVideoSpot(param1 == TRADE_HELP_LIST ? TRADE_HELP_VIDEO : "");
+            }
             return;
          }
          if(param2.length > 1)
@@ -142,6 +150,27 @@ package gui
          {
             movieSelector.destroy();
             movieSelector = null;
+         }
+         openVideoSpot("close");
+      }
+
+      // the trade list's "how to trade" video (AvatarEditor.onInfoBtnDown)
+      private static const TRADE_HELP_LIST:int = 22;
+      private static const TRADE_HELP_VIDEO:String = "dQw4w9WgXcQ";
+
+      // the game page's video box (game.html ajVideoSpot): a YouTube id to
+      // play, "" for a link of the player's choosing, "close" to put it away
+      public static function openVideoSpot(param1:String) : void
+      {
+         try
+         {
+            if(ExternalInterface.available)
+            {
+               ExternalInterface.call("ajVideoSpot",param1);
+            }
+         }
+         catch(e:Error)
+         {
          }
       }
       

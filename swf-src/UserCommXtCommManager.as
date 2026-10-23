@@ -173,7 +173,8 @@ package avatar
          {
             return;
          }
-         AvatarManager.addAvatarMessage(param1,_playerSfsUserId,0);
+         // the bubble comes with the server's echo, as typed chat's does, so
+         // that it is drawn in the player's chat style (lib/world.js)
          addChatMessage(param1);
          gMainFrame.server.sendMessage(param2 + RAW_STR + 1);
          if(_chatHist.enableFreeChatValue)

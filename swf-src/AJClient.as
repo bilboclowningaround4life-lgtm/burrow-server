@@ -1832,9 +1832,10 @@ package
       //   9004  Frame rate: 1 is 60; anything else is Max, as fast as the
       //         timer goes (about 80 a second on the owner's machine, where
       //         the 120 and 144 this once offered came to the same).
-      //   9005  Camera: 1 Smooth (room.RoomManagerWorld.easeCamera), else the
-      //         game's own.
-      //   9007  Performance profile: 1 Low-end, 2 High, unset Balanced. A
+      //   9005  Camera: 2 the game's own, else Smooth
+      //         (room.RoomManagerWorld.easeCamera).
+      //   9007  Performance profile: 1 Low-end, 3 Balanced, else (unset) High:
+      //         the best the game can look, which most machines manage. A
       //         profile changes only optional rendering work, never the
       //         game's native 24 FPS (which would slow its animations).
       //   9008  Play as your pet (gui.PetInventory, lib/pets.js): 1 on.
@@ -1874,12 +1875,13 @@ package
          return settingOf(9003) != 1;
       }
 
-      // 0 Balanced, 1 Low-end, 2 High. It is persisted with the other client
-      // settings, so the preference follows the player to another computer.
+      // 0 Balanced, 1 Low-end, 2 High (kept as 3, 1, and 2 or nothing). It
+      // is persisted with the other client settings, so the preference
+      // follows the player to another computer.
       public static function performanceProfile() : int
       {
          var _loc1_:int = settingOf(9007);
-         return _loc1_ == 1 || _loc1_ == 2 ? _loc1_ : 0;
+         return _loc1_ == 1 ? 1 : (_loc1_ == 3 ? 0 : 2);
       }
 
       public static function performanceProfileLabel() : String
@@ -1910,7 +1912,7 @@ package
          var _loc1_:Boolean = false;
          try
          {
-            _loc1_ = smoothOn() && settingOf(9005) == 1;
+            _loc1_ = smoothOn() && settingOf(9005) != 2;
          }
          catch(e:Error)
          {

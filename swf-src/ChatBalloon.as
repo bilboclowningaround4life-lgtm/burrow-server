@@ -216,6 +216,8 @@ package gui
             var field:TextField = TextField(_msgTxt);
             var shown:String = field.text;
             field.addEventListener("link",onMentionLink,false,0,true);
+            field.addEventListener("mouseDown",onMentionMouse,false,0,true);
+            field.addEventListener("mouseUp",onMentionMouse,false,0,true);
             AJClient.resolveMentions(shown,function(param1:Array):void
             {
                if(field.text == shown)
@@ -275,7 +277,7 @@ package gui
          _styleText = uint(parseInt(_loc4_[2],16));
          _styleBorder = uint(parseInt(_loc4_[3],16));
          _styleOpacity = Math.max(0.25,Math.min(1,Number(_loc4_[4]) / 100));
-         _styleAnimation = _loc4_[5] == "pulse" || _loc4_[5] == "shimmer" || _loc4_[5] == "flow" || _loc4_[5] == "rainbow" ? _loc4_[5] : "none";
+         _styleAnimation = GuiManager.chatBubbleAnimationsEnabled() && (_loc4_[5] == "pulse" || _loc4_[5] == "shimmer" || _loc4_[5] == "flow" || _loc4_[5] == "rainbow") ? _loc4_[5] : "none";
          _styleSpeed = Math.max(40,Math.min(300,Number(_loc4_[6])));
          _styleGradient = _loc4_.length > 7 && (_loc4_[7] == "solid" || _loc4_[7] == "radial") ? _loc4_[7] : "linear";
          _styleAngle = _loc4_.length > 8 && int(_loc4_[8]) >= 0 && int(_loc4_[8]) <= 315 && int(_loc4_[8]) % 45 == 0 ? int(_loc4_[8]) : 45;
@@ -976,6 +978,18 @@ package gui
          if(_msgTxt is TextField)
          {
             AJClient.drawMentionBacks(TextField(_msgTxt),null);
+         }
+      }
+
+      // a press on a tag goes no further: the room under the balloon would
+      // take it for a click on the floor and walk the player there.
+      private function onMentionMouse(param1:MouseEvent) : void
+      {
+         var _loc2_:TextField = param1.currentTarget as TextField;
+         var _loc3_:int = _loc2_ != null ? _loc2_.getCharIndexAtPoint(param1.localX,param1.localY) : -1;
+         if(_loc3_ >= 0 && _loc2_.getTextFormat(_loc3_,_loc3_ + 1).url)
+         {
+            param1.stopPropagation();
          }
       }
 

@@ -173,7 +173,8 @@ module.exports = {
   // 61: the Owner, Moderator, Developer and Verified name tag badges seen by everyone.
   // 62: "Custom pictures" in the settings menu, to hide players' item pictures.
   // 83: den items tinted (the tint in their version, DenItemHelper.applyTint).
-  buildVersion: env.AJ_BUILD_VERSION || "83",
+  // 84: fixes from the owner's list of bugs (bugs.txt, 2026-10-23).
+  buildVersion: env.AJ_BUILD_VERSION || "84",
   // what the official CDN is asked for; not ours to change.
   upstreamBuildVersion: "3",
 
@@ -381,6 +382,8 @@ module.exports = {
   chatLogDays: env.AJ_CHAT_LOG_DAYS === undefined ? 30 : Math.max(0, Number(env.AJ_CHAT_LOG_DAYS) || 0),
   chatLinesPerWindow: 5, // typed chat lines one player may send ...
   chatWindowMs: 3000, // ... in this long
+  roomActionsPerWindow: 6, // emotes, actions and the like one player may send a room ...
+  roomActionWindowMs: 3000, // ... in this long (the rest reach nobody)
   maxBytesPerTenSeconds: 512 * 1024, // per game socket; saving a full den is about 40 KB
   // custom colours (lib/colours.js). every one ever made is sent to every
   // player at every login and is never taken out again, so there is an end

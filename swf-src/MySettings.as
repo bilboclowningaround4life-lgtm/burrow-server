@@ -213,9 +213,14 @@ package gui
             "run":showSavedList
          */
          },{
-            "type":TOGGLE_TYPE_JOIN,
+            // this server's switches, drawn as the Nametag row is: the two
+            // choices named either side of the knob (ItemWindowToggle)
+            "type":TOGGLE_TYPE_TOGGLE_BTN,
             "frame":"wasd",
-            "iconFrame":"world"
+            "iconFrame":"world",
+            "labelLabel":"WASD Movement",
+            "onLabel":"On",
+            "offLabel":"Off"
          },{
             "type":TOGGLE_TYPE_JOIN,
             "frame":"performance",
@@ -233,14 +238,20 @@ package gui
             "frame":"camera",
             "iconFrame":"world"
          },{
-            "type":TOGGLE_TYPE_JOIN,
+            "type":TOGGLE_TYPE_TOGGLE_BTN,
             "frame":"hideBlocked",
-            "iconFrame":"buddyRequest"
+            "iconFrame":"buddyRequest",
+            "labelLabel":"Blocked Players",
+            "onLabel":"Shown",
+            "offLabel":"Hidden"
          },{
             // the pictures players give their items (AJClient.customArtOn)
-            "type":TOGGLE_TYPE_JOIN,
+            "type":TOGGLE_TYPE_TOGGLE_BTN,
             "frame":"customArt",
-            "iconFrame":"redeemCode"
+            "iconFrame":"redeemCode",
+            "labelLabel":"Custom Items",
+            "onLabel":"Shown",
+            "offLabel":"Hidden"
          },{
             // more, smaller items a row in the clothes and item pickers
             // (AJClient.expandedInventoryOn)

@@ -249,6 +249,41 @@
       .aj-box-close:hover {
         background: radial-gradient(circle at 50% 35%, #ff8f74, #d93d22 70%);
       }
+      /* a video spot's box (ajVideoSpot): a screen of the theatre's size with
+         a link box under it, over the middle of the stage */
+      #spot {
+        --s: 1;
+        --px: calc(var(--s) * 1px);
+        position: fixed;
+        inset: 0;
+        z-index: 3;
+        pointer-events: none;
+        font-family: "DigitalDelivery", Arial, Helvetica, sans-serif;
+      }
+      #spot[hidden], #spot [hidden] {
+        display: none !important;
+      }
+      #spot-box {
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        width: calc(548 * var(--px));
+      }
+      #spot-screen {
+        width: calc(512 * var(--px));
+        height: calc(288 * var(--px));
+        background: #000;
+        border: calc(2 * var(--px)) solid #7f6744;
+        border-radius: calc(6 * var(--px));
+        overflow: hidden;
+        margin-bottom: calc(10 * var(--px));
+      }
+      #spot-screen > * {
+        width: 100%;
+        height: 100%;
+        border: 0;
+        display: block;
+      }
       .aj-box-said {
         min-height: calc(15 * var(--px));
         margin: calc(8 * var(--px)) 0 0;
@@ -284,6 +319,19 @@
           <button type="button" id="own-video-stop" class="aj-button stop">Stop</button>
         </div>
         <p id="own-video-said" class="aj-box-said" role="status"></p>
+      </form>
+    </div>
+    <div id="spot" hidden>
+      <form id="spot-box" class="aj-box">
+        <h2>Your Video</h2>
+        <button type="button" id="spot-close" class="aj-box-close" aria-label="Close">&times;</button>
+        <div id="spot-screen"></div>
+        <input id="spot-url" type="url" placeholder="Paste a link: YouTube, Vimeo, .mp4, .webm, .mp3" autocomplete="off" spellcheck="false" aria-label="Video link">
+        <div class="own-video-buttons">
+          <button type="submit" class="aj-button go">Play</button>
+          <button type="button" id="spot-stop" class="aj-button stop">Stop</button>
+        </div>
+        <p id="spot-said" class="aj-box-said" role="status"></p>
       </form>
     </div>
     <script>
@@ -357,8 +405,11 @@
       // an address the SWF wants open (AJClient.finderLink): the client opens
       // it in the system browser, being a webview that may open no window.
       function ajOpenPage(url) {
-        if (/^https:\/\//.test(String(url))) {
-          window.ipc.sendToHost("openPage", String(url));
+        // https anywhere, or this server's own pages however it is reached
+        // (a server tried on this machine has no https)
+        const link = String(url);
+        if (/^https:\/\//.test(link) || link.startsWith(`${location.origin}/`)) {
+          window.ipc.sendToHost("openPage", link);
         }
       }
 
@@ -390,9 +441,24 @@
           ? {x: numbers[0], y: numbers[1], w: numbers[2], h: numbers[3]} : null;
         theatreCover = theatreScreen && parts.length === 3 ? coverRects(Number(parts[1]), parts[2].split(",")) : [];
         placeTheatre();
-        ownVideo.inTheatre(theatreScreen !== null);
-        browserPage.inTheatre(theatreScreen !== null);
+        // the screen gone for a moment (the room redrawing it) is no reason
+        // to stop the player's video and put its box away: only gone for good.
+        clearTimeout(theatreLeftTimer);
+        if (theatreScreen !== null) {
+          ownVideo.inTheatre(true);
+          browserPage.inTheatre(true);
+        }
+        else {
+          theatreLeftTimer = setTimeout(() => {
+            if (theatreScreen === null) {
+              ownVideo.inTheatre(false);
+              browserPage.inTheatre(false);
+            }
+          }, THEATRE_GONE_MS);
+        }
       }
+      const THEATRE_GONE_MS = 1500;
+      let theatreLeftTimer = null;
 
       // the covered cells as rectangles: runs along each row, and a run
       // that the row above has too made taller.
@@ -496,7 +562,9 @@
           x: theatre.offsetLeft + x * scale, y: theatre.offsetTop + y * scale,
           w: w * scale, h: (below ? h : h - BUTTON_ROOM) * scale, clip,
         });
-        for (const id of ["theatre-pills", "own-video-box", "browser-bar"]) {
+        // (not the Your Video box: the player opened it, and with it open the
+        // button is away, so hiding it too left nothing to click)
+        for (const id of ["theatre-pills", "browser-bar"]) {
           const element = document.getElementById(id);
           element.classList.toggle("covered", underCover(element, scale));
         }
@@ -525,11 +593,101 @@
         browserPage.roomVideo(true);
       }
 
+      // a link of the player's own, to play: YouTube and Vimeo links in those
+      // sites' own players; any other http(s) address in a <video>, which
+      // plays a media file or nothing (a web page in it runs no script and
+      // asks nobody for anything). {frame}, {file} or {error}; null for no link.
+      const videoEmbedFor = text => {
+        let url;
+        try {
+          url = new URL(text);
+        }
+        catch (err) {
+          return null;
+        }
+        if (url.protocol !== "https:" && url.protocol !== "http:") {
+          return null;
+        }
+        const host = url.hostname.replace(/^(?:www\.|m\.)/, "").toLowerCase();
+        let match = null;
+        if (host === "youtu.be") {
+          match = /^\/([A-Za-z0-9_-]{11})/.exec(url.pathname);
+        }
+        else if (host === "youtube.com" || host === "youtube-nocookie.com") {
+          match = url.pathname === "/watch" ? /^([A-Za-z0-9_-]{11})$/.exec(url.searchParams.get("v") || "")
+            : /^\/(?:embed|shorts|live)\/([A-Za-z0-9_-]{11})/.exec(url.pathname);
+        }
+        if (match) {
+          return {frame: `https://www.youtube-nocookie.com/embed/${match[1]}?autoplay=1&rel=0&modestbranding=1`};
+        }
+        if (host === "vimeo.com" || host === "player.vimeo.com") {
+          match = /^\/(?:video\/)?(\d{1,12})(?:\/|$)/.exec(url.pathname);
+          return match ? {frame: `https://player.vimeo.com/video/${match[1]}?autoplay=1`} : {error: "That Vimeo link has no video in it."};
+        }
+        if (host.endsWith("youtube.com")) {
+          return {error: "That YouTube link has no video in it."};
+        }
+        return {file: url.href};
+      };
+
+      // the desktop client loads nothing for this page from elsewhere but
+      // what it is told the player chose (client 1.3.2, app/main.js): it
+      // says when that address may load. an older client never answers.
+      const CLIENT_WAIT_MS = 1500;
+      let videoCleared = null; // {link, go}
+      window.ipc.on("ownVideoReady", (event, link) => {
+        if (videoCleared && videoCleared.link === link) {
+          videoCleared.go();
+        }
+      });
+      const whenVideoCleared = link => new Promise(resolve => {
+        const timer = setTimeout(resolve, CLIENT_WAIT_MS);
+        videoCleared = {link, go: () => {
+          clearTimeout(timer);
+          resolve();
+        }};
+        window.ipc.sendToHost("ownVideo", link);
+      });
+
+      // the element that plays `found` (videoEmbedFor). a file starts once
+      // the client lets it, and only while `stillWanted(element)`;
+      // `failed` hears of a file that would not play.
+      const videoElementFor = (found, stillWanted, failed, started) => {
+        if (found.frame) {
+          const frame = document.createElement("iframe");
+          frame.title = "Your video";
+          frame.allow = "autoplay; encrypted-media; fullscreen";
+          frame.referrerPolicy = "strict-origin-when-cross-origin";
+          frame.src = found.frame;
+          return frame;
+        }
+        const video = document.createElement("video");
+        video.controls = true;
+        video.autoplay = true;
+        video.playsInline = true;
+        video.addEventListener("error", failed);
+        whenVideoCleared(found.file).then(() => {
+          if (stillWanted(video)) {
+            video.src = found.file;
+            started();
+          }
+        });
+        return video;
+      };
+      const VIDEO_DID_NOT_PLAY = "That link did not play. It has to be a video or sound file (.mp4, .webm, .mp3), and the site has to allow it.";
+
+      // a playing element stopped: a file's sound with it, and the client told.
+      const stopVideoElement = element => {
+        if (element instanceof HTMLMediaElement) {
+          element.pause();
+          element.removeAttribute("src");
+          element.load();
+          window.ipc.sendToHost("ownVideo", "");
+        }
+      };
+
       // a video of the player's own choosing on the theatre screen, seen by
-      // them alone: nothing of it goes to the server. YouTube and Vimeo
-      // links play in those sites' own players; any other http(s) address
-      // in a <video>, which plays a media file or nothing (a web page in it
-      // runs no script and asks nobody for anything).
+      // them alone: nothing of it goes to the server.
       const ownVideo = (() => {
         const $ = id => document.getElementById(id);
         const screen = $("own-video");
@@ -541,39 +699,6 @@
         let here = false; // in a theatre
         let roomPlaying = false;
         let playing = null; // the element showing it
-
-        const embedFor = text => {
-          let url;
-          try {
-            url = new URL(text);
-          }
-          catch (err) {
-            return null;
-          }
-          if (url.protocol !== "https:" && url.protocol !== "http:") {
-            return null;
-          }
-          const host = url.hostname.replace(/^(?:www\.|m\.)/, "").toLowerCase();
-          let match = null;
-          if (host === "youtu.be") {
-            match = /^\/([A-Za-z0-9_-]{11})/.exec(url.pathname);
-          }
-          else if (host === "youtube.com" || host === "youtube-nocookie.com") {
-            match = url.pathname === "/watch" ? /^([A-Za-z0-9_-]{11})$/.exec(url.searchParams.get("v") || "")
-              : /^\/(?:embed|shorts|live)\/([A-Za-z0-9_-]{11})/.exec(url.pathname);
-          }
-          if (match) {
-            return {frame: `https://www.youtube-nocookie.com/embed/${match[1]}?autoplay=1&rel=0&modestbranding=1`};
-          }
-          if (host === "vimeo.com" || host === "player.vimeo.com") {
-            match = /^\/(?:video\/)?(\d{1,12})(?:\/|$)/.exec(url.pathname);
-            return match ? {frame: `https://player.vimeo.com/video/${match[1]}?autoplay=1`} : {error: "That Vimeo link has no video in it."};
-          }
-          if (host.endsWith("youtube.com")) {
-            return {error: "That YouTube link has no video in it."};
-          }
-          return {file: url.href};
-        };
 
         const show = () => {
           screen.hidden = !playing || !here || roomPlaying;
@@ -588,99 +713,71 @@
         };
 
         const stop = () => {
-          if (playing instanceof HTMLMediaElement) {
-            playing.pause();
-            playing.removeAttribute("src");
-            playing.load();
-            window.ipc.sendToHost("ownVideo", "");
-          }
+          stopVideoElement(playing);
           screen.replaceChildren();
           playing = null;
           show();
         };
 
-        // the desktop client loads nothing for this page from elsewhere but
-        // what it is told the player chose (client 1.3.2, app/main.js): it
-        // says when that address may load. an older client never answers.
-        const CLIENT_WAIT_MS = 1500;
-        let cleared = null; // {link, go}
-        window.ipc.on("ownVideoReady", (event, link) => {
-          if (cleared && cleared.link === link) {
-            cleared.go();
-          }
-        });
-        const whenCleared = link => new Promise(resolve => {
-          const timer = setTimeout(resolve, CLIENT_WAIT_MS);
-          cleared = {link, go: () => {
-            clearTimeout(timer);
-            resolve();
-          }};
-          window.ipc.sendToHost("ownVideo", link);
-        });
-
-        const play = text => {
-          const found = embedFor(String(text || "").trim());
-          if (!found || found.error) {
-            said.textContent = found ? found.error : "Paste a link starting with https://";
-            return;
-          }
-          stop();
-          browserPage.close();
-          if (found.frame) {
-            playing = document.createElement("iframe");
-            playing.title = "Your video";
-            playing.allow = "autoplay; encrypted-media; fullscreen";
-            playing.referrerPolicy = "strict-origin-when-cross-origin";
-            playing.src = found.frame;
-          }
-          else {
-            const video = document.createElement("video");
-            playing = video;
-            video.controls = true;
-            video.autoplay = true;
-            video.playsInline = true;
-            video.addEventListener("error", () => {
-              said.textContent = "That link did not play. It has to be a video or sound file (.mp4, .webm, .mp3), and the site has to allow it.";
-            });
-            whenCleared(found.file).then(() => {
-              if (playing === video) {
-                video.src = found.file;
-                show();
-              }
-            });
-          }
-          screen.append(playing);
-          said.textContent = roomPlaying ? "It plays when the theatre's own video stops." : "";
-          try {
-            localStorage.setItem(SAVED, input.value.trim());
-          }
-          catch (err) {
-          }
-          show();
-        };
-
-        opener.addEventListener("click", () => {
-          box.hidden = !box.hidden;
-          opener.hidden = !box.hidden;
+        const open = () => {
+          box.hidden = false;
+          opener.hidden = true;
           placeTheatre();
-          if (!box.hidden) {
-            if (!input.value) {
-              try {
-                input.value = localStorage.getItem(SAVED) || "";
-              }
-              catch (err) {
-              }
+          if (!input.value) {
+            try {
+              input.value = localStorage.getItem(SAVED) || "";
             }
-            input.focus();
-            input.select();
+            catch (err) {
+            }
           }
-        });
+          input.focus();
+          input.select();
+        };
+        // the box away and the button back: the two are never gone at once.
         const close = () => {
           box.hidden = true;
           opener.hidden = false;
           placeTheatre();
           said.textContent = "";
         };
+
+        const play = text => {
+          const found = videoEmbedFor(String(text || "").trim());
+          if (!found || found.error) {
+            said.textContent = found ? found.error : "Paste a link starting with https://";
+            return;
+          }
+          stop();
+          browserPage.close();
+          const element = videoElementFor(found, video => playing === video, () => {
+            open();
+            said.textContent = VIDEO_DID_NOT_PLAY;
+          }, show);
+          playing = element;
+          screen.append(playing);
+          try {
+            localStorage.setItem(SAVED, input.value.trim());
+          }
+          catch (err) {
+          }
+          // the box goes once it plays, the button back to change it
+          if (roomPlaying) {
+            said.textContent = "It plays when the theatre's own video stops.";
+          }
+          else {
+            close();
+          }
+          show();
+        };
+
+        opener.addEventListener("click", () => {
+          if (box.hidden) {
+            open();
+          }
+          else {
+            close();
+          }
+        });
         $("own-video-close").addEventListener("click", close);
         $("own-video-stop").addEventListener("click", () => {
           stop();
@@ -697,6 +794,7 @@
         });
 
         return {
+          open,
           // the browser takes the screen: the player's own video and its box go.
           giveWay() {
             stop();
@@ -723,6 +821,113 @@
           },
         };
       })();
+
+      // a video spot of the game's (a screen in a room, a "videos" button,
+      // the trade list's help): its videos came from the official server,
+      // and here the spot opens a box for a video of the player's own, over
+      // the middle of the stage, seen by them alone. the game says when
+      // (AJClient's GenericListGuiManager.openVideoSpot).
+      const spotVideo = (() => {
+        const $ = id => document.getElementById(id);
+        const spot = $("spot");
+        const screen = $("spot-screen");
+        const input = $("spot-url");
+        const said = $("spot-said");
+        const SAVED = "ownVideoUrl";
+        let playing = null;
+
+        const fit = () => {
+          spot.style.setProperty("--s", String(Math.min(window.innerWidth / STAGE_W, window.innerHeight / STAGE_H)));
+        };
+        const stop = () => {
+          stopVideoElement(playing);
+          screen.replaceChildren();
+          playing = null;
+        };
+        const play = text => {
+          const found = videoEmbedFor(String(text || "").trim());
+          if (!found || found.error) {
+            said.textContent = found ? found.error : "Paste a link starting with https://";
+            return;
+          }
+          stop();
+          said.textContent = "";
+          playing = videoElementFor(found, video => playing === video, () => {
+            said.textContent = VIDEO_DID_NOT_PLAY;
+          }, () => {});
+          screen.append(playing);
+        };
+        const close = () => {
+          stop();
+          spot.hidden = true;
+          said.textContent = "";
+        };
+
+        $("spot-close").addEventListener("click", close);
+        $("spot-stop").addEventListener("click", () => {
+          stop();
+          said.textContent = "";
+        });
+        $("spot-box").addEventListener("submit", event => {
+          event.preventDefault();
+          play(input.value);
+          try {
+            localStorage.setItem(SAVED, input.value.trim());
+          }
+          catch (err) {
+          }
+        });
+        input.addEventListener("keydown", event => {
+          if (event.key === "Escape") {
+            close();
+          }
+        });
+        window.addEventListener("resize", fit);
+
+        return {
+          close,
+          // `videoId`: a YouTube video to play at once, or none
+          open(videoId) {
+            fit();
+            spot.hidden = false;
+            said.textContent = "";
+            if (videoId) {
+              input.value = "";
+              play(`https://youtu.be/${videoId}`);
+              return;
+            }
+            if (!input.value) {
+              try {
+                input.value = localStorage.getItem(SAVED) || "";
+              }
+              catch (err) {
+              }
+            }
+            input.focus();
+            input.select();
+          },
+        };
+      })();
+
+      // from the game: a video spot clicked ("" or a YouTube id of ours to
+      // play), or "close" (the player left the room). in a theatre, its own
+      // Your Video box.
+      function ajVideoSpot(text) {
+        const wanted = String(text || "");
+        if (wanted === "close") {
+          spotVideo.close();
+          return;
+        }
+        if (/^[A-Za-z0-9_-]{11}$/.test(wanted)) {
+          spotVideo.open(wanted);
+        }
+        else if (theatreScreen !== null) {
+          ownVideo.open();
+        }
+        else {
+          spotVideo.open("");
+        }
+      }
 
       // the theatre's browser (experimental): a web page on the screen, for
       // the player alone, when the admin has turned it on (the server marks

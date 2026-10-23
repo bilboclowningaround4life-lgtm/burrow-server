@@ -272,6 +272,8 @@ package gui
       private static var _sharedObj:SharedObject;
 
       private static var _customChatBubbles:Boolean = true;
+
+      private static var _chatBubbleAnimations:Boolean = true;
       
       private static var _giftGemsMediaHelper:MediaHelper;
       
@@ -368,12 +370,14 @@ package gui
       {
          _sharedObj = null;
          _customChatBubbles = true;
+         _chatBubbleAnimations = true;
          if(gMainFrame.myFlashVarUserName != null)
          {
             try
             {
                _sharedObj = SharedObject.getLocal(gMainFrame.myFlashVarUserName);
                _customChatBubbles = _sharedObj.data.customChatBubbles !== false;
+               _chatBubbleAnimations = _sharedObj.data.chatBubbleAnimations !== false;
                if(_sharedObj.data.cursor == null || _sharedObj.data.cursor == "custom")
                {
                   CursorManager.switchToCursor("custom_cursor");
@@ -480,6 +484,30 @@ package gui
             return;
          }
          _sharedObj.data.customChatBubbles = param1;
+         try
+         {
+            _sharedObj.flush();
+         }
+         catch(e:Error)
+         {
+         }
+      }
+      
+      // the same, for custom bubbles' animations (pulse, shimmer, flow,
+      // rainbow): off, every bubble keeps its colours and stands still.
+      public static function chatBubbleAnimationsEnabled() : Boolean
+      {
+         return _chatBubbleAnimations;
+      }
+
+      public static function setChatBubbleAnimationsEnabled(param1:Boolean) : void
+      {
+         _chatBubbleAnimations = param1;
+         if(_sharedObj == null)
+         {
+            return;
+         }
+         _sharedObj.data.chatBubbleAnimations = param1;
          try
          {
             _sharedObj.flush();
@@ -995,6 +1023,15 @@ package gui
       
       public static function initMoviePlayer(param1:int, param2:StreamDefCollection, param3:Boolean = true, param4:int = 512, param5:int = 288) : void
       {
+         // nothing to play (the official server's video lists are gone; a
+         // tutorial video that never came): the game page's video box
+         // instead, as GenericListGuiManager.launchMovies does.
+         if(param2 == null || param2.length == 0 || param2.getStreamDefItem(0) == null)
+         {
+            DarkenManager.showLoadingSpiral(false);
+            GenericListGuiManager.openVideoSpot("");
+            return;
+         }
          if(_videoPlayer)
          {
             _videoPlayer.destroy();

@@ -14,6 +14,7 @@ package gui.itemWindows
    import flash.geom.Matrix;
    import flash.events.MouseEvent;
    import flash.events.Event;
+   import flash.external.ExternalInterface;
    import flash.geom.Rectangle;
    import flash.net.URLRequest;
    import flash.net.navigateToURL;
@@ -133,7 +134,7 @@ package gui.itemWindows
                _window.toggleBtn.visible = true;
                _window.toggleBtn.toggleBtn.toggleKnob.gotoAndStop("up");
                _window.toggleBtn.toggleBtn.toggleBG.gotoAndStop("up");
-               _window.icon.gotoAndStop(_currItem.frame);
+               _window.icon.gotoAndStop(_currItem.iconFrame != null ? _currItem.iconFrame : _currItem.frame);
                _window.toggleBtn.addEventListener("mouseDown",handleMouseDown,false,0,true);
                _window.toggleBtn.addEventListener("rollOver",handleMouseOver,false,0,true);
                _window.toggleBtn.addEventListener("rollOut",handleMouseOut,false,0,true);
@@ -236,16 +237,15 @@ package gui.itemWindows
                }
                break;
             case "hideBlocked":
-               showHideBlocked();
-               break;
             case "customArt":
-               showCustomArt();
+            case "wasd":
+               _window.toggleBtn.gotoAndStop("double");
+               _window.toggleBtn.toggleBtn.gotoAndStop(ownSwitchOn() ? "startingOn" : "startingOff");
+               setToggleLabels();
+               _window.labelTxtCont.labelTxt.text = _currItem.labelLabel;
                break;
             case "expandedInventory":
                showExpandedInventory();
-               break;
-            case "wasd":
-               showWasd();
                break;
             case "performance":
                showPerformance();
@@ -443,17 +443,57 @@ package gui.itemWindows
          }
       }
       
-      // "WASD Movement": walking with those four keys as well as the
-      // arrow keys (room.RoomManagerView). user var 9002, not one of the game's.
-      private function showWasd() : void
+      // the switches of this server's own (MySettings): on is the left
+      // choice, as on the Nametag row. "WASD Movement": walking with those
+      // four keys as well as the arrow keys (room.RoomManagerView), user var
+      // 9002. "Blocked Players": shown, or hidden in rooms, user var 9001.
+      // "Custom Items": the pictures players give their items, or every item
+      // with its base's art (AJClient.customArtOn), user var 9006.
+      private function ownSwitchOn() : Boolean
       {
-         var _loc1_:String = AJClient.wasdOn() ? "Turn off" : "Turn on";
-         _window.goNowBtn.down.txt.text = _loc1_;
-         _window.goNowBtn.mouse.mouse.txt.text = _loc1_;
-         _window.goNowBtn.mouse.up.txt.text = _loc1_;
-         _window.labelTxtCont.labelTxt.text = "WASD Movement";
+         switch(_currItem.frame)
+         {
+            case "wasd":
+               return AJClient.wasdOn();
+            case "hideBlocked":
+               return !blockedAreHidden();
+            case "customArt":
+               return AJClient.customArtOn();
+         }
+         return false;
       }
-      
+
+      private function setOwnSwitch(param1:Boolean) : void
+      {
+         switch(_currItem.frame)
+         {
+            case "wasd":
+               setWasd(param1);
+               break;
+            case "hideBlocked":
+               setHideBlocked(!param1);
+               break;
+            case "customArt":
+               setCustomArt(param1);
+         }
+      }
+
+      // the two choices either side of a switch: the game's strings, or
+      // words of this server's
+      private function setToggleLabels() : void
+      {
+         if(_currItem.onLabel != null)
+         {
+            _window.toggleBtn.toggleBtn.valueTxt.onTxt.text = _currItem.onLabel;
+            _window.toggleBtn.toggleBtn.valueTxt.offTxt.text = _currItem.offLabel;
+         }
+         else
+         {
+            LocalizationManager.translateId(_window.toggleBtn.toggleBtn.valueTxt.onTxt,_currItem.onTxt);
+            LocalizationManager.translateId(_window.toggleBtn.toggleBtn.valueTxt.offTxt,_currItem.offTxt);
+         }
+      }
+
       // the three rows of smooth graphics (AJClient has what each does): a
       // name on the left and on the button what it is set to now; a press
       // goes on to the next choice. user vars 9003 to 9005.
@@ -481,10 +521,12 @@ package gui.itemWindows
          showChoice("Performance",AJClient.performanceProfileLabel());
       }
 
+      // High, Balanced, Low-end, and round again (AJClient.performanceProfile
+      // has how each is kept)
       private function nextPerformance() : void
       {
          var _loc1_:int = AJClient.performanceProfile();
-         setChoice(9007,_loc1_ == 0 ? 1 : (_loc1_ == 1 ? 2 : 0));
+         setChoice(9007,_loc1_ == 2 ? 3 : (_loc1_ == 0 ? 1 : 2));
          showPerformance();
       }
       
@@ -513,7 +555,6 @@ package gui.itemWindows
          {
             gMainFrame.stage.focus = null;
          }
-         showWasd();
       }
       
       private function blockedAreHidden() : Boolean
@@ -521,38 +562,16 @@ package gui.itemWindows
          return gMainFrame.userInfo.userVarCache.getUserVarValueById(9001) == 1;
       }
       
-      private function showHideBlocked() : void
-      {
-         var _loc1_:String = blockedAreHidden() ? "Show" : "Hide";
-         _window.goNowBtn.down.txt.text = _loc1_;
-         _window.goNowBtn.mouse.mouse.txt.text = _loc1_;
-         _window.goNowBtn.mouse.up.txt.text = _loc1_;
-         _window.labelTxtCont.labelTxt.text = blockedAreHidden() ? "Blocked players: hidden" : "Blocked players: shown";
-      }
-      
       private function setHideBlocked(param1:Boolean) : void
       {
          gMainFrame.userInfo.userVarCache.updateUserVar(9001,param1 ? 1 : 0);
          AchievementXtCommManager.requestSetUserVar(9001,param1 ? 1 : 0);
-         showHideBlocked();
-      }
-      
-      // "Custom pictures": the pictures players give their items, or every
-      // item with its base's art (AJClient.customArtOn). user var 9006.
-      private function showCustomArt() : void
-      {
-         var _loc1_:String = AJClient.customArtOn() ? "Hide" : "Show";
-         _window.goNowBtn.down.txt.text = _loc1_;
-         _window.goNowBtn.mouse.mouse.txt.text = _loc1_;
-         _window.goNowBtn.mouse.up.txt.text = _loc1_;
-         _window.labelTxtCont.labelTxt.text = AJClient.customArtOn() ? "Custom pictures: shown" : "Custom pictures: hidden";
       }
       
       private function setCustomArt(param1:Boolean) : void
       {
          gMainFrame.userInfo.userVarCache.updateUserVar(9006,param1 ? 0 : 1);
          AchievementXtCommManager.requestSetUserVar(9006,param1 ? 0 : 1);
-         showCustomArt();
       }
 
       // "Expanded Inventory" (Strawberry Jam's): more, smaller items a row in
@@ -727,7 +746,10 @@ package gui.itemWindows
          _chatButtons.outline = _loc2_;
          _loc1_.addChild(chatButton("Reset",380,397,110,"chat-reset"));
          _loc1_.addChild(chatButton("Save",505,397,125,"chat-save"));
-         _chatStatus = chatText("",30,451,590,14,0x5A2C19,false);
+         _loc2_ = chatButton("",30,441,190,"chat-animations");
+         _loc1_.addChild(_loc2_);
+         _chatButtons.animations = _loc2_;
+         _chatStatus = chatText("",235,451,400,14,0x5A2C19,false);
          _loc1_.addChild(_chatStatus);
          _loc1_.addChild(chatButton("X",600,18,36,"chat-close"));
          GuiManager.guiLayer.addChild(_chatPopup);
@@ -804,6 +826,7 @@ package gui.itemWindows
          setChatButton(_chatButtons.speed,"Speed: " + _chatStyle.speed + "%");
          setChatButton(_chatButtons.outline,"Outline: " + _chatStyle.outline + " px");
          setChatButton(_chatButtons.enabled,"Custom bubbles: " + (GuiManager.customChatBubblesEnabled() ? "On" : "Off"));
+         setChatButton(_chatButtons.animations,"Animations: " + (GuiManager.chatBubbleAnimationsEnabled() ? "On" : "Off"));
          if(_chatSelectedStop < 0 || _chatSelectedStop >= _chatStops.length)
          {
             _chatSelectedStop = 0;
@@ -1407,6 +1430,12 @@ package gui.itemWindows
             refreshChatPopup(false);
             _chatStatus.text = GuiManager.customChatBubblesEnabled() ? "Custom bubbles are visible on this client." : "Custom bubbles are hidden only on this client.";
          }
+         else if(_loc3_ == "chat-animations")
+         {
+            GuiManager.setChatBubbleAnimationsEnabled(!GuiManager.chatBubbleAnimationsEnabled());
+            refreshChatPopup(false);
+            _chatStatus.text = GuiManager.chatBubbleAnimationsEnabled() ? "Bubbles move as their owners chose." : "Every bubble stands still on this client.";
+         }
          else if(_loc3_ == "chat-save")
          {
             _loc4_ = 0;
@@ -1435,6 +1464,7 @@ package gui.itemWindows
          var _loc3_:String = null;
          var _loc4_:Array = null;
          var _loc6_:int = 0;
+         var _loc7_:Boolean = false;
          param1.stopPropagation();
          if(_currItem.type == MySettings.TOGGLE_TYPE_TOGGLE_BTN)
          {
@@ -1446,6 +1476,13 @@ package gui.itemWindows
                   break;
                case "music":
                   handleMuteUnmute();
+                  break;
+               case "wasd":
+               case "hideBlocked":
+               case "customArt":
+                  _loc7_ = !ownSwitchOn();
+                  setOwnSwitch(_loc7_);
+                  param1.currentTarget.toggleBtn.gotoAndPlay(_loc7_ ? "on" : "off");
                   break;
                case "buddyRequest":
                case "gameInvites":
@@ -1564,8 +1601,7 @@ package gui.itemWindows
                      }
                   }
             }
-            LocalizationManager.translateId(_window.toggleBtn.toggleBtn.valueTxt.onTxt,_currItem.onTxt);
-            LocalizationManager.translateId(_window.toggleBtn.toggleBtn.valueTxt.offTxt,_currItem.offTxt);
+            setToggleLabels();
          }
          else if(_currItem.type == MySettings.TOGGLE_TYPE_CURSOR)
          {
@@ -1653,17 +1689,8 @@ package gui.itemWindows
                   }
                   AJClient.runCommand(_loc3_);
                   break;
-               case "hideBlocked":
-                  setHideBlocked(!blockedAreHidden());
-                  break;
-               case "customArt":
-                  setCustomArt(!AJClient.customArtOn());
-                  break;
                case "expandedInventory":
                   setExpandedInventory(!AJClient.expandedInventoryOn());
-                  break;
-               case "wasd":
-                  setWasd(!AJClient.wasdOn());
                   break;
                case "performance":
                   nextPerformance();
@@ -1690,10 +1717,21 @@ package gui.itemWindows
                   GuiManager.initEmailConfirmation(null,null,false);
                   break;
                case "twoFactor":
-                  _loc3_ = gMainFrame.clientInfo.websiteURL + "parents";
+                  // the account page, where two-step sign-in is set up. the
+                  // game's webview may open no window: the page asks the
+                  // client to open it in the system browser (game.html
+                  // ajOpenPage), as the client's own Manage Account does.
+                  _loc3_ = gMainFrame.clientInfo.websiteURL + "account";
                   try
                   {
-                     navigateToURL(new URLRequest(_loc3_),"_blank");
+                     if(ExternalInterface.available)
+                     {
+                        ExternalInterface.call("ajOpenPage",_loc3_);
+                     }
+                     else
+                     {
+                        navigateToURL(new URLRequest(_loc3_),"_blank");
+                     }
                   }
                   catch(e:Error)
                   {

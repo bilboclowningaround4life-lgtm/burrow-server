@@ -242,8 +242,7 @@ package gui
          _loc2_.addEventListener("change",onDetailTyped,false,0,true);
          _loc1_.x = -143;
          _loc1_.y = -19;
-         LocalizationManager.updateToFit(_reportFromCard.bodyTxt,"Choose a REASON, tell the moderator what happened, then click REPORT.");
-         _reportFromCard.bodyTxt.height = 48;
+         _reportFromCard.bodyTxt.visible = false;
          _reportFromCard.addChildAt(_loc1_,_reportFromCard.getChildIndex(_reportFromCard.reasonChatTree));
          _detailBar = _loc1_;
          _detailInput = _loc2_;
