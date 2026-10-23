@@ -66,6 +66,39 @@ const run = async () => {
   // the wrong password and the sign-in are both in her history, newest first.
   assert.deepStrictEqual(me.history.map(login => [login.via, login.ok]), [["web", true], ["web", false]]);
 
+  // --- signing in with the Burrow client: the page's nonce, the client's
+  // token for a ticket, and the ticket only for the browser that started it
+  const clientStart = async () => {
+    const started = await mine("client-start", {});
+    assert.strictEqual(started.status, 200);
+    assert.match(started.cookie, /^ajc_clink=[0-9a-f]{48}$/);
+    return {nonce: started.data.nonce, cookie: started.cookie};
+  };
+  const openTicket = async (link, cookie) => {
+    const response = await fetch(`${BASE}${new URL(link).pathname}${new URL(link).search}`, {headers: cookie ? {Cookie: cookie} : {}});
+    const result = /client=(\w+)/.exec(await response.text())[1];
+    const session = response.headers.getSetCookie().map(line => line.split(";")[0]).find(line => /^ajc_account=[0-9a-f]{48}$/.test(line));
+    return {result, session};
+  };
+  const annToken = (await (await authenticate("Ann", "KettlePass01")).json()).auth_token;
+  const browser = await clientStart();
+  assert.strictEqual((await mine("client-ticket", {token: annToken, nonce: "0".repeat(48)})).status, 400);
+  assert.strictEqual((await mine("client-ticket", {token: "f".repeat(annToken.length), nonce: browser.nonce})).status, 401);
+  const ticket = await mine("client-ticket", {token: annToken, nonce: browser.nonce});
+  assert.deepStrictEqual([ticket.status, ticket.data.username], [200, "Ann"]);
+  // another browser (no cookie, or another start's) gets nothing from it, and it is then used up
+  const other = await clientStart();
+  assert.deepStrictEqual(await openTicket(ticket.data.url, other.cookie), {result: "elsewhere", session: undefined});
+  assert.deepStrictEqual(await openTicket(ticket.data.url, browser.cookie), {result: "expired", session: undefined});
+  const second = await mine("client-ticket", {token: annToken, nonce: browser.nonce});
+  assert.deepStrictEqual(await openTicket(second.data.url), {result: "elsewhere", session: undefined});
+  const third = await mine("client-ticket", {token: annToken, nonce: browser.nonce});
+  const opened = await openTicket(third.data.url, browser.cookie);
+  assert.strictEqual(opened.result, "ok");
+  assert.strictEqual((await mine("me", undefined, opened.session)).data.username, "Ann");
+  // the start is used up with the sign-in
+  assert.strictEqual((await mine("client-ticket", {token: annToken, nonce: browser.nonce})).status, 400);
+
   // --- parts of the game switched off
   const {client: a, roomId} = await arrive("Ann", "KettlePass01");
   const {client: b} = await arrive("Ben", "KettlePass01");

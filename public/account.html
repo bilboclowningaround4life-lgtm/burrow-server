@@ -215,7 +215,7 @@
             <label class="check" style="margin-top:12px"><input id="remember-device" type="checkbox"> Trust this device for 30 days</label>
           </div>
           <div class="captcha" id="captcha"></div>
-          <div class="row"><button class="primary" type="submit">Sign in</button></div>
+          <div class="row"><button class="primary" type="submit">Sign in</button><button id="client-sign-in" type="button">Sign in with the Burrow client</button></div>
         </form>
         <p class="status" id="gate-status" role="status"></p>
         <p class="hint" style="margin:10px 0 0">No account yet? <a href="/register">Create one</a> · <a href="/account/recover">Forgot password or 2FA?</a></p>
@@ -1120,8 +1120,70 @@
         }
         else {
           showGate(result.status === 0 ? result.data.error : "");
+          if (Object.hasOwn(CLIENT_RESULTS, clientResult || "")) {
+            setStatus("gate-status", CLIENT_RESULTS[clientResult], true);
+          }
+          // never by itself on the way back from it: a browser that would
+          // not keep the sign-in would open tab after tab.
+          else if (!clientResult && clientRemembered()) {
+            signInWithClient();
+          }
+        }
+        if (clientResult) {
+          if (result.ok && clientResult === "ok") {
+            try {
+              localStorage.setItem(CLIENT_KEY, "1");
+            }
+            catch (err) {
+              // not kept: the button stays the way in.
+            }
+          }
+          history.replaceState(null, "", location.pathname + location.hash);
         }
       };
+
+      // "Sign in with the Burrow client" (lib/manage.js): the browser asks
+      // whether to open Burrow, which opens this page again signed in (in a
+      // new tab: this one follows). once that has worked in this browser, the
+      // page asks by itself each time it opens signed out.
+      const CLIENT_KEY = "burrow-client-sign-in";
+      const CLIENT_RESULTS = {
+        ok: "Burrow signed you in, but this browser did not keep it. Sign in with your password.",
+        expired: "That sign-in took too long. Try again.",
+        elsewhere: "Burrow opened the page in another browser than the one you started in. Start from this browser again, or sign in with your password.",
+      };
+      const clientResult = new URLSearchParams(location.search).get("client");
+      const clientRemembered = () => {
+        try {
+          return localStorage.getItem(CLIENT_KEY) === "1";
+        }
+        catch (err) {
+          return false;
+        }
+      };
+      let clientWait = null;
+      const signInWithClient = async () => {
+        const started = await api("client-start", {});
+        if (!started.ok) {
+          setStatus("gate-status", started.data.error || "That did not work.", true);
+          return;
+        }
+        setStatus("gate-status", "Opening Burrow… Allow it if your browser asks. Burrow must be logged in, or remember you.");
+        location.href = `burrow://account?n=${started.data.nonce}`;
+        clearInterval(clientWait);
+        const until = Date.now() + 120000;
+        clientWait = setInterval(async () => {
+          if (account || Date.now() > until) {
+            clearInterval(clientWait);
+            return;
+          }
+          if ((await api("me")).ok) {
+            clearInterval(clientWait);
+            await load();
+          }
+        }, 2000);
+      };
+      $("client-sign-in").addEventListener("click", signInWithClient);
 
       $("sign-in").addEventListener("submit", async event => {
         event.preventDefault();
