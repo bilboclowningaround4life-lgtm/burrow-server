@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Item preview</title>
+    <style>
+      html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: #1a1a1a; }
+      ruffle-player, ruffle-object, ruffle-embed { display: block; width: 100%; height: 100%; }
+    </style>
+    <script>
+      // ruffle's own settings: no menus, overlays or sound.
+      window.RufflePlayer = {config: {
+        publicPath: "https://cdn.jsdelivr.net/npm/@ruffle-rs/ruffle@0.7.1/",
+        polyfills: false,
+        autoplay: "on",
+        unmuteOverlay: "hidden",
+        splashScreen: false,
+        contextMenu: "off",
+        letterbox: "off",
+        backgroundColor: "#1A1A1A", // the giver page's
+        volume: 0,
+        openUrlMode: "deny",
+        allowScriptAccess: false,
+        showSwfDownload: false,
+        warnOnUnsupportedContent: false,
+        logLevel: "error",
+      }};
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/@ruffle-rs/ruffle@0.7.1/ruffle.js" integrity="sha256-JgNqlFZwiN+z3oinWejtEKTOoHspUArzbzRe70JCAJg=" crossorigin="anonymous"></script>
+  </head>
+  <body>
+    <script>
+      "use strict";
+
+      // one den item for the web item giver (public/items.html), in a frame of
+      // its own: #id=&v=&tint=rrggbb&s=, as Give would give it. its art plays
+      // in public/item-preview.swf (tools/preview-host), which sets the
+      // variant and tint as a den does. served sandboxed (lib/manage.js): this
+      // page has no origin, so no sign-in, of its own.
+      let player = null;
+
+      const show = () => {
+        const wanted = new URLSearchParams(location.hash.slice(1));
+        const id = /^\d{1,9}$/.test(wanted.get("id") || "") ? wanted.get("id") : null;
+        if (player) {
+          player.remove();
+          player = null;
+        }
+        if (!id || !window.RufflePlayer || !window.RufflePlayer.newest) {
+          return;
+        }
+        player = window.RufflePlayer.newest().createPlayer();
+        document.body.append(player);
+        const parameters = {art: new URL(`/account/art/den/${id}`, location.href).href, version: String(Number(wanted.get("v")) || 0)};
+        if (/^[0-9a-f]{6}$/i.test(wanted.get("tint") || "")) {
+          parameters.tint = wanted.get("tint");
+          parameters.strength = String(Number(wanted.get("s")) || 100);
+        }
+        const movie = {url: new URL("/account/item-preview.swf", location.href).href, parameters};
+        (player.ruffle ? player.ruffle().load(movie) : player.load(movie)).catch(() => {});
+      };
+
+      window.addEventListener("hashchange", show);
+      show();
+    </script>
+  </body>
+</html>

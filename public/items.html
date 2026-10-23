@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Item giver</title>
+    <link rel="icon" type="image/png" href="/logo-square.png">
+    <style>
+      /* the account page's look (public/account.html): black and white, in
+         the game's own text font. the only colours are the items' own. */
+      @font-face { font-family: "DigitalDelivery"; font-weight: 400; src: url("/fonts/CCDigitalDelivery-Regular.otf") format("opentype"); }
+      @font-face { font-family: "DigitalDelivery"; font-weight: 700; src: url("/fonts/CCDigitalDelivery-Bold.otf") format("opentype"); }
+      :root {
+        color-scheme: dark;
+        --bg: #000;
+        --panel: #0d0d0d;
+        --raised: #1a1a1a;
+        --line: #2e2e2e;
+        --text: #fff;
+        --muted: #8c8c8c;
+      }
+      * { box-sizing: border-box; }
+      [hidden] { display: none !important; }
+      ::selection { background: #fff; color: #000; }
+      body {
+        margin: 0;
+        padding: 32px 16px 48px;
+        background: var(--bg);
+        color: var(--text);
+        font: 15px/1.4 "DigitalDelivery", system-ui, "Segoe UI", sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+      a { color: inherit; text-underline-offset: 3px; }
+      h1 { margin: 0; font-size: 26px; font-weight: 700; flex: 1; }
+      h2 { margin: 0 0 6px; font-size: 17px; font-weight: 700; }
+      h3 { margin: 16px 0 8px; font-size: 14px; font-weight: 700; }
+      p { margin: 0 0 12px; color: var(--muted); }
+      .wrap { max-width: 760px; margin: 0 auto; }
+      header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+      header img { width: 40px; height: 40px; }
+      section {
+        padding: 20px;
+        margin-bottom: 16px;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 18px;
+      }
+      input, select {
+        font: inherit;
+        color: var(--text);
+        background: var(--bg);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 9px 14px 10px;
+      }
+      input:hover, select:hover { border-color: #555; }
+      input:focus, select:focus { outline: none; border-color: var(--text); }
+      input:disabled { opacity: 0.4; }
+      button, a.button {
+        font: inherit;
+        color: var(--text);
+        background: none;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 7px 16px 8px;
+        cursor: pointer;
+        white-space: nowrap;
+        text-decoration: none;
+      }
+      button:hover, a.button:hover { background: var(--raised); border-color: #555; }
+      button:disabled { opacity: 0.45; cursor: default; }
+      button:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+      button.primary { font-weight: 700; color: #000; background: var(--text); border-color: var(--text); }
+      button.primary:hover { background: #d9d9d9; border-color: #d9d9d9; }
+      button[aria-pressed="true"] { border-color: var(--text); background: var(--raised); }
+      .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+      #search-row input { flex: 1; min-width: 180px; }
+      .status { min-height: 20px; margin: 10px 0 0; font-size: 13px; color: var(--muted); }
+      .status.bad { color: var(--text); }
+      .status.bad::before { content: "! "; font-weight: 700; }
+      #results { list-style: none; margin: 12px 0 0; padding: 0; display: grid; gap: 6px; }
+      #results button {
+        display: flex; width: 100%; gap: 10px; align-items: baseline;
+        border-radius: 14px; padding: 9px 14px 10px; text-align: left; white-space: normal;
+      }
+      #results .name { flex: 1; overflow-wrap: anywhere; }
+      .meta { font-size: 12px; color: var(--muted); white-space: nowrap; }
+      .swatches { display: inline-flex; gap: 3px; vertical-align: middle; }
+      .swatch { width: 16px; height: 16px; border-radius: 5px; border: 1px solid rgba(255, 255, 255, 0.25); }
+      #presets, #variants { display: flex; flex-wrap: wrap; gap: 6px; }
+      #presets button, #variants button { padding: 6px 10px 7px; border-radius: 12px; }
+      .slot { display: grid; grid-template-columns: 74px 44px 1fr; gap: 8px; align-items: center; margin-bottom: 8px; }
+      .slot span { color: var(--muted); font-size: 13px; }
+      .colour-slot { grid-template-columns: 74px 44px minmax(0, 160px) 96px; }
+      input.aj { width: 100%; min-width: 0; font-variant-numeric: tabular-nums; }
+      #whole-row { margin-top: 4px; }
+      #whole-row > span:first-child { width: 74px; color: var(--muted); font-size: 13px; }
+      #whole { width: 190px; }
+      #whole-note { white-space: normal; }
+      input[type="color"] { width: 44px; height: 38px; padding: 3px; border-radius: 10px; cursor: pointer; }
+      input.hex { width: 100%; max-width: 160px; font-variant-numeric: tabular-nums; text-transform: lowercase; }
+      input[type="range"] { flex: 1; padding: 0; border: none; accent-color: #fff; }
+      label.check { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }
+      #give-row { margin-top: 16px; }
+      #item-head { display: flex; gap: 16px; align-items: center; }
+      #item-head > div:first-child { flex: 1; min-width: 0; }
+      #preview {
+        position: relative; flex: none; width: 160px; height: 160px;
+        display: grid; place-items: center;
+        background: var(--raised); border: 1px solid var(--line); border-radius: 14px; overflow: hidden;
+      }
+      #preview canvas, #preview img { max-width: 144px; max-height: 144px; }
+      #preview iframe { width: 100%; height: 100%; border: 0; }
+      #preview-note { position: absolute; inset: auto 8px 6px; font-size: 11px; text-align: center; color: var(--muted); }
+      @media (max-width: 480px) {
+        .slot { grid-template-columns: 64px 44px 1fr; }
+        .colour-slot { grid-template-columns: 64px 44px minmax(0, 1fr) 56px; }
+        .colour-slot span { white-space: nowrap; }
+        #whole-row > span:first-child { width: auto; }
+        #whole { width: 100%; }
+        #item-head { flex-direction: column-reverse; align-items: flex-start; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <img src="/logo.png" alt="">
+        <h1>Item giver</h1>
+        <a class="button" href="/account">Your account</a>
+      </header>
+
+      <section id="gate" hidden>
+        <h2 id="gate-title">Sign in first</h2>
+        <p id="gate-text">The item giver uses your account page's sign-in.</p>
+        <a class="button" href="/account">Go to your account page</a>
+      </section>
+
+      <section id="finder" hidden>
+        <p id="who"></p>
+        <div class="row" id="search-row">
+          <input id="query" type="search" placeholder="Name or id" maxlength="60" autocomplete="off" spellcheck="false" aria-label="Search items">
+          <select id="kind" aria-label="Kind of item">
+            <option value="all">Everything</option>
+            <option value="clothing">Clothing</option>
+            <option value="den">Den items</option>
+          </select>
+        </div>
+        <p class="status" id="search-status" role="status"></p>
+        <ul id="results"></ul>
+      </section>
+
+      <section id="detail" hidden>
+        <div id="item-head">
+          <div>
+            <h2 id="item-name"></h2>
+            <p class="meta" id="item-meta"></p>
+          </div>
+          <div id="preview" aria-label="How it looks">
+            <canvas id="preview-icon" hidden></canvas>
+            <img id="preview-art" alt="" hidden>
+            <iframe id="preview-den" title="How it looks" sandbox="allow-scripts" hidden></iframe>
+            <span id="preview-note"></span>
+          </div>
+        </div>
+
+        <div id="clothing-part">
+          <h3>The item's own colours</h3>
+          <div id="presets"></div>
+          <h3>Your own colours</h3>
+          <div id="slots"></div>
+          <div class="row" id="whole-row">
+            <span>Whole item</span>
+            <input class="aj" id="whole" inputmode="numeric" maxlength="11" spellcheck="false" autocomplete="off" placeholder="AJ colour" aria-label="The whole item's colour as the game writes it">
+            <span class="meta" id="whole-note"></span>
+          </div>
+        </div>
+
+        <div id="den-part">
+          <h3>Variant</h3>
+          <div id="variants"></div>
+          <p id="no-variants" hidden>This item has no other variants.</p>
+          <h3>Tint</h3>
+          <p id="tint-off" hidden>Mannequins cannot be tinted.</p>
+          <div id="tint-on">
+            <label class="check"><input id="tint" type="checkbox"> The whole item in shades of a colour</label>
+            <div class="slot" style="margin-top:10px">
+              <span>Colour</span>
+              <input type="color" id="tint-picker" value="#4ab3f4" aria-label="Tint colour">
+              <input class="hex" id="tint-hex" value="#4ab3f4" maxlength="7" spellcheck="false" aria-label="Tint colour as #RRGGBB">
+            </div>
+            <div class="row">
+              <span class="meta">Strength</span>
+              <input type="range" id="tint-strength" min="1" max="100" value="70" aria-label="Tint strength">
+              <span class="meta" id="tint-strength-text">70%</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="row" id="give-row">
+          <button class="primary" id="give" type="button">Give</button>
+          <span class="meta" id="give-what"></span>
+        </div>
+        <p class="status" id="give-status" role="status"></p>
+      </section>
+    </div>
+
+    <script>
+      "use strict";
+
+      // the item giver on the web (lib/admin.js searchFor and giveAs, by way
+      // of lib/manage.js), signed in as on the account page: items go to that
+      // account, as the in-game giver's go to the one playing.
+      const $ = id => document.getElementById(id);
+      const KINDS = {clothing: "Clothing", den: "Den item"};
+
+      let chosen = null; // the result picked
+      let preset = 0; // the item's own colour picked, or null for the slots' own
+      let variant = 0;
+
+      const setStatus = (id, text, bad = false) => {
+        $(id).textContent = text;
+        $(id).classList.toggle("bad", bad);
+      };
+
+      const api = async (path, body) => {
+        try {
+          const response = await fetch(`/account/api/${path}`, body === undefined ? {} : {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify(body),
+          });
+          return {ok: response.ok, status: response.status, data: await response.json().catch(() => ({}))};
+        }
+        catch (err) {
+          return {ok: false, status: 0, data: {error: "The server did not answer."}};
+        }
+      };
+
+      // "#abc", "abc", "#aabbcc" or "aabbcc" as "#aabbcc"; null for anything else.
+      const readHex = text => {
+        const match = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(String(text).trim());
+        if (!match) {
+          return null;
+        }
+        const digits = match[1].length === 3 ? match[1].replace(/./g, digit => digit + digit) : match[1];
+        return `#${digits.toLowerCase()}`;
+      };
+
+      const swatches = colours => {
+        const box = document.createElement("span");
+        box.className = "swatches";
+        for (const colour of colours) {
+          const swatch = document.createElement("span");
+          swatch.className = "swatch";
+          swatch.style.background = `#${colour}`;
+          box.append(swatch);
+        }
+        return box;
+      };
+
+      // a colour picker and a #RRGGBB box that follow each other; `onChange`
+      // is told of each colour taken.
+      const pairUp = (picker, box, onChange) => {
+        picker.addEventListener("input", () => {
+          box.value = picker.value;
+          onChange();
+        });
+        box.addEventListener("input", () => {
+          const hex = readHex(box.value);
+          box.setCustomValidity(hex ? "" : "#RRGGBB");
+          if (hex) {
+            picker.value = hex;
+            onChange();
+          }
+        });
+        box.addEventListener("change", () => {
+          const hex = readHex(box.value);
+          box.value = hex || picker.value;
+          box.setCustomValidity("");
+        });
+      };
+
+      // the game's way of writing colours: one number for the whole item, its
+      // four colours' places in the game's palette of 256, colour 1 the top
+      // byte; written unsigned, or signed as lists of the game's colours often
+      // have them. top byte 0xFD: a custom colour, four RGB values of the
+      // server's own (lib/colours.js), not palette places.
+      let palette = null; // the game's 256 colours, "#rrggbb", once the server says
+      let customId = null; // the custom colour the four make, when one is known
+      const CUSTOM_TOP = 0xFD;
+      const isCustom = value => value >>> 24 === CUSTOM_TOP;
+      const readWhole = text => {
+        const value = /^-?\d{1,10}$/.test(String(text).trim()) ? Number(String(text).trim()) : NaN;
+        return value >= -0x80000000 && value <= 0xFFFFFFFF ? value >>> 0 : null;
+      };
+      // one colour's place, 0 to 255; -128 to -1 are 128 to 255 written signed
+      const readIndex = text => {
+        const value = /^-?\d{1,3}$/.test(String(text).trim()) ? Number(String(text).trim()) : NaN;
+        return value >= -128 && value <= 255 ? (value + 256) % 256 : null;
+      };
+      const pack = indexes => indexes.reduce((value, index) => value * 256 + index, 0);
+
+      // a slot set: its colour, and its place in the palette or null. `from`
+      // is the box typed in, left as typed.
+      const setSlot = (slot, hex, index, from = null) => {
+        slot.index = index;
+        if (from !== "hex") {
+          slot.picker.value = hex;
+          slot.box.value = hex;
+        }
+        if (from !== "aj") {
+          slot.aj.value = index === null ? "" : String(index);
+          slot.aj.setCustomValidity("");
+        }
+        slot.aj.placeholder = index === null && palette ? "custom" : "AJ";
+      };
+
+      // what Give gives: a colour id, or null for a custom colour still to make.
+      const wholeValue = () => {
+        if (preset !== null && chosen && chosen.presets[preset]) {
+          return chosen.presets[preset].id;
+        }
+        if (customId !== null) {
+          return customId;
+        }
+        return slots.every(slot => slot.index !== null) ? pack(slots.map(slot => slot.index)) : null;
+      };
+
+      let lookupTimer = null;
+      const showWhole = () => {
+        const value = wholeValue();
+        if (document.activeElement !== $("whole")) {
+          $("whole").value = value === null ? "" : String(value);
+          $("whole").setCustomValidity("");
+        }
+        $("whole-note").textContent = value === null ? "A new custom colour, made when you give it."
+          : `${value} unsigned · ${value | 0} signed${isCustom(value) ? " · a custom colour" : ""}`;
+        // four colours not all the palette's: a custom colour they make already?
+        clearTimeout(lookupTimer);
+        if (value === null) {
+          const asked = slots.map(slot => slot.picker.value.slice(1)).join(",");
+          lookupTimer = setTimeout(async () => {
+            const result = await api(`colour?rgbs=${asked}`);
+            if (result.ok && result.data.id !== null && preset === null && customId === null
+              && slots.map(slot => slot.picker.value.slice(1)).join(",") === asked) {
+              customId = result.data.id;
+              showWhole();
+              showChoice();
+            }
+          }, 200);
+        }
+      };
+
+      // a whole item's colour taken: from the whole box (`from`) or one of the item's own.
+      const applyWhole = async (value, from = null, own = null) => {
+        if (isCustom(value)) {
+          const colours = own || await api(`colour?id=${value}`).then(result => (result.ok ? result.data.colours : null));
+          if (!colours) {
+            $("whole-note").textContent = "No such custom colour.";
+            return;
+          }
+          if (from === "whole" && readWhole($("whole").value) !== value) {
+            return; // typed on since
+          }
+          colours.forEach((colour, index) => setSlot(slots[index], `#${colour}`, null));
+          customId = value;
+        }
+        else {
+          [24, 16, 8, 0].forEach((shift, index) => {
+            const place = value >>> shift & 255;
+            setSlot(slots[index], palette ? palette[place] : own ? `#${own[index]}` : slots[index].picker.value, place);
+          });
+          customId = null;
+        }
+        showChoice();
+      };
+
+      const slots = [];
+      for (let slot = 0; slot < 4; slot++) {
+        const row = document.createElement("div");
+        row.className = "slot colour-slot";
+        const name = document.createElement("span");
+        name.textContent = `Colour ${slot + 1}`;
+        const picker = document.createElement("input");
+        picker.type = "color";
+        picker.value = "#ffffff";
+        picker.setAttribute("aria-label", `Colour ${slot + 1}`);
+        const box = document.createElement("input");
+        box.className = "hex";
+        box.maxLength = 7;
+        box.spellcheck = false;
+        box.value = "#ffffff";
+        box.setAttribute("aria-label", `Colour ${slot + 1} as #RRGGBB`);
+        const aj = document.createElement("input");
+        aj.className = "aj";
+        aj.inputMode = "numeric";
+        aj.maxLength = 4;
+        aj.spellcheck = false;
+        aj.autocomplete = "off";
+        aj.placeholder = "AJ";
+        aj.title = "Its place in the game's palette: 0 to 255 (-128 to -1 written signed)";
+        aj.setAttribute("aria-label", `Colour ${slot + 1} as the game writes it, 0 to 255`);
+        const own = {picker, box, aj, index: null};
+        pairUp(picker, box, () => {
+          const place = palette ? palette.indexOf(picker.value) : -1;
+          setSlot(own, picker.value, place < 0 ? null : place, "hex");
+          preset = null;
+          customId = null;
+          showChoice();
+        });
+        aj.addEventListener("input", () => {
+          const place = readIndex(aj.value);
+          aj.setCustomValidity(place === null || !palette ? "0 to 255" : "");
+          if (place !== null && palette) {
+            setSlot(own, palette[place], place, "aj");
+            preset = null;
+            customId = null;
+            showChoice();
+          }
+        });
+        aj.addEventListener("change", () => setSlot(own, own.picker.value, own.index));
+        row.append(name, picker, box, aj);
+        $("slots").append(row);
+        slots.push(own);
+      }
+      $("whole").addEventListener("input", () => {
+        const value = readWhole($("whole").value);
+        $("whole").setCustomValidity(value === null ? "A colour id, signed or not" : "");
+        if (value !== null) {
+          preset = null;
+          applyWhole(value, "whole");
+        }
+        else if ($("whole").value.trim()) {
+          $("whole-note").textContent = "A whole number: -2147483648 to 4294967295.";
+        }
+      });
+      $("whole").addEventListener("change", showChoice);
+      pairUp($("tint-picker"), $("tint-hex"), () => {
+        $("tint").checked = true;
+        showChoice();
+      });
+      $("tint").addEventListener("change", showChoice);
+      $("tint-strength").addEventListener("input", () => {
+        $("tint-strength-text").textContent = `${$("tint-strength").value}%`;
+        $("tint").checked = true;
+        showChoice();
+      });
+
+      // the item as it would be given (lib/itempreview.js). clothing: its
+      // closet icon, coloured here as the game colours it
+      // (PaletteHelper.BuildAnimalPalette, LayerBitmap.paintFrame). den items:
+      // their art played in a frame of public/item-preview.html. a custom
+      // item with a picture of its own: that picture.
+      const icons = new Map(); // clothing id: its icon, {w, h, bytes}, or null
+      const rgbOf = hex => parseInt(hex.slice(1), 16);
+      const gradient = (palette, rgb, start, count) => {
+        let [red, green, blue] = [rgb >> 16 & 255, rgb >> 8 & 255, rgb & 255];
+        const [stepRed, stepGreen, stepBlue] = [red, green, blue].map(value => Math.floor(value / (count + 2)));
+        for (let at = start + count - 1, left = count; left > 0; left--, at--) {
+          [255, 192, 128, 64].forEach((alpha, shade) => {
+            palette[at + 25 * shade] = [red, green, blue, alpha];
+          });
+          red -= stepRed;
+          green -= stepGreen;
+          blue -= stepBlue;
+        }
+      };
+      const mix = (one, other) => [16, 8, 0].reduce((sum, shift) => sum | (((one >> shift & 255) + (other >> shift & 255)) >> 1) << shift, 0);
+      const paletteOf = ([one, two, three, four]) => {
+        const palette = [];
+        [[one, 1, 3], [two, 4, 3], [three, 7, 3], [four, 10, 3], [mix(one, two), 13, 2], [mix(two, three), 15, 2],
+          [mix(one, three), 17, 2], [mix(one, four), 19, 2], [mix(two, four), 21, 2], [mix(three, four), 23, 2]]
+          .forEach(([rgb, start, count]) => gradient(palette, rgb, start, count));
+        return palette;
+      };
+      const paintIcon = (icon, colours) => {
+        const canvas = $("preview-icon");
+        canvas.width = icon.w;
+        canvas.height = icon.h;
+        const context = canvas.getContext("2d");
+        const image = context.createImageData(icon.w, icon.h);
+        const palette = paletteOf(colours.map(rgbOf));
+        const bytes = icon.bytes;
+        let [x, y, at] = [0, 0, 0];
+        while (at < bytes.length) {
+          let index = bytes[at++];
+          let run = 1;
+          if (index & 0x80) {
+            index &= 0x7F;
+            run = bytes[at++] + 1;
+          }
+          if (index === 0) {
+            x += run;
+            if (x >= icon.w) {
+              const over = x - icon.w;
+              x = over % icon.w;
+              y += Math.floor(over / icon.w) + 1;
+            }
+            continue;
+          }
+          const colour = palette[index];
+          for (; run > 0; run--) {
+            if (colour && y < icon.h) {
+              image.data.set(colour, (y * icon.w + x) * 4);
+            }
+            if (++x === icon.w) {
+              x = 0;
+              y++;
+            }
+          }
+        }
+        context.putImageData(image, 0, 0);
+      };
+
+      let previewShown = null; // what the preview shows, to change only what changed
+      let denTimer = null;
+      const showPreview = () => {
+        const entry = chosen;
+        const note = text => {
+          $("preview-note").textContent = text;
+        };
+        const only = id => {
+          for (const one of ["preview-icon", "preview-art", "preview-den"]) {
+            $(one).hidden = one !== id;
+          }
+        };
+        if (entry.art) {
+          if (previewShown !== entry.art) {
+            previewShown = entry.art;
+            only("preview-art");
+            note("");
+            $("preview-art").src = entry.art;
+          }
+          return;
+        }
+        if (entry.kind === "clothing") {
+          const colours = slots.map(slot => slot.picker.value);
+          const icon = icons.get(entry.id);
+          if (icon === undefined) {
+            only(null);
+            note("Loading…");
+            icons.set(entry.id, false);
+            fetch(`/account/art/clothing/${entry.id}`).then(response => (response.ok ? response.json() : null)).catch(() => null).then(found => {
+              icons.set(entry.id, found ? {w: found.w, h: found.h, bytes: Uint8Array.from(atob(found.b), letter => letter.charCodeAt(0))} : null);
+              if (chosen === entry) {
+                showPreview();
+              }
+            });
+            return;
+          }
+          if (icon) {
+            only("preview-icon");
+            note("");
+            paintIcon(icon, colours);
+          }
+          else if (icon === null) {
+            only(null);
+            note("No picture");
+          }
+          previewShown = null;
+          return;
+        }
+        const wanted = new URLSearchParams({id: entry.id, v: variant});
+        if (entry.tintable && $("tint").checked) {
+          wanted.set("tint", $("tint-picker").value.slice(1));
+          wanted.set("s", $("tint-strength").value);
+        }
+        const address = `/account/item-preview#${wanted}`;
+        if (previewShown === address) {
+          return;
+        }
+        previewShown = address;
+        only("preview-den");
+        note("");
+        // a new player each time: a slider dragged waits for it to stop
+        clearTimeout(denTimer);
+        denTimer = setTimeout(() => {
+          $("preview-den").src = address;
+        }, $("preview-den").src ? 250 : 0);
+      };
+
+      // what Give would give, said beside it.
+      function showChoice() {
+        for (const [index, button] of [...$("presets").children].entries()) {
+          button.setAttribute("aria-pressed", String(index === preset));
+        }
+        for (const button of $("variants").children) {
+          button.setAttribute("aria-pressed", String(Number(button.dataset.variant) === variant));
+        }
+        if (!chosen) {
+          return;
+        }
+        showPreview();
+        if (chosen.kind === "clothing") {
+          showWhole();
+          const value = wholeValue();
+          $("give-what").textContent = preset !== null ? `Its own colour ${preset + 1} (${value})`
+            : value !== null ? `Colour ${value}` : `A new colour of ${slots.map(slot => slot.picker.value).join(" ")}`;
+        }
+        else {
+          const parts = [chosen.variants.length ? `Variant ${chosen.variants.indexOf(variant) + 1}` : "As it is"];
+          if (chosen.tintable && $("tint").checked) {
+            parts.push(`tinted ${$("tint-picker").value} at ${$("tint-strength").value}%`);
+          }
+          $("give-what").textContent = parts.join(", ");
+        }
+      }
+
+      const choosePreset = index => {
+        preset = index;
+        applyWhole(chosen.presets[index].id, null, chosen.presets[index].colours);
+      };
+
+      const choose = entry => {
+        chosen = entry;
+        $("detail").hidden = false;
+        $("item-name").textContent = entry.name;
+        $("item-meta").textContent = `${KINDS[entry.kind]} · id ${entry.id}${entry.cost ? ` · ${entry.cost} gems in shops` : ""}`;
+        $("clothing-part").hidden = entry.kind !== "clothing";
+        $("den-part").hidden = entry.kind !== "den";
+        setStatus("give-status", "");
+        if (entry.kind === "clothing") {
+          $("presets").textContent = "";
+          entry.presets.forEach((option, index) => {
+            const button = document.createElement("button");
+            button.type = "button";
+            button.title = `Colour ${index + 1} (${option.id})`;
+            button.append(option.colours ? swatches(option.colours) : String(index + 1));
+            button.addEventListener("click", () => choosePreset(index));
+            $("presets").append(button);
+          });
+          if (entry.presets.length) {
+            choosePreset(0);
+          }
+          else {
+            preset = null;
+          }
+        }
+        else {
+          $("variants").textContent = "";
+          variant = entry.variants.length ? entry.variants[0] : 0;
+          entry.variants.forEach((version, index) => {
+            const button = document.createElement("button");
+            button.type = "button";
+            button.dataset.variant = String(version);
+            button.title = `Variant ${index + 1}`;
+            button.append(entry.variantColours ? swatches(entry.variantColours[index]) : String(index + 1));
+            button.addEventListener("click", () => {
+              variant = version;
+              showChoice();
+            });
+            $("variants").append(button);
+          });
+          $("no-variants").hidden = entry.variants.length > 0;
+          $("tint-on").hidden = !entry.tintable;
+          $("tint-off").hidden = entry.tintable;
+          $("tint").checked = false;
+        }
+        showChoice();
+        $("detail").scrollIntoView({behavior: "smooth", block: "nearest"});
+      };
+
+      const showResults = found => {
+        const list = $("results");
+        list.textContent = "";
+        for (const entry of found.results) {
+          const row = document.createElement("li");
+          const button = document.createElement("button");
+          button.type = "button";
+          const name = document.createElement("span");
+          name.className = "name";
+          name.textContent = entry.name;
+          const meta = document.createElement("span");
+          meta.className = "meta";
+          meta.textContent = `${KINDS[entry.kind]} · ${entry.id}`;
+          button.append(name, meta);
+          button.addEventListener("click", () => choose(entry));
+          row.append(button);
+          list.append(row);
+        }
+        setStatus("search-status", found.total === 0 ? "Nothing found." : found.total > found.results.length
+          ? `${found.total} found; the first ${found.results.length} shown. Type more to narrow it down.` : `${found.total} found.`);
+      };
+
+      const showGate = (title, text) => {
+        $("gate").hidden = false;
+        $("finder").hidden = true;
+        $("detail").hidden = true;
+        $("gate-title").textContent = title;
+        $("gate-text").textContent = text;
+      };
+
+      let asked = 0;
+      const search = async () => {
+        const mine = ++asked;
+        const result = await api(`giver?q=${encodeURIComponent($("query").value.trim())}&kind=${encodeURIComponent($("kind").value)}`);
+        if (mine !== asked) {
+          return;
+        }
+        if (result.status === 401) {
+          showGate("Sign in first", "The item giver uses your account page's sign-in.");
+        }
+        else if (result.status === 403) {
+          showGate("Not now", "The item giver is not open to this account at the moment. Your account page says why.");
+        }
+        else if (!result.ok) {
+          setStatus("search-status", result.data.error || "That did not work.", true);
+        }
+        else {
+          $("gate").hidden = true;
+          $("finder").hidden = false;
+          showResults(result.data);
+        }
+      };
+
+      let typing = null;
+      $("query").addEventListener("input", () => {
+        clearTimeout(typing);
+        typing = setTimeout(search, 250);
+      });
+      $("kind").addEventListener("change", search);
+
+      $("give").addEventListener("click", async () => {
+        if (!chosen) {
+          return;
+        }
+        const body = {kind: chosen.kind, id: chosen.id};
+        if (chosen.kind === "clothing") {
+          const value = wholeValue();
+          if (preset !== null) {
+            body.colorIndex = preset;
+          }
+          else if (value !== null) {
+            body.color = String(value);
+          }
+          else {
+            body.color = slots.map(slot => slot.picker.value).join(" ");
+          }
+        }
+        else {
+          body.version = variant;
+          if (chosen.tintable && $("tint").checked) {
+            body.tint = $("tint-picker").value;
+            body.tintStrength = Number($("tint-strength").value);
+          }
+        }
+        $("give").disabled = true;
+        const result = await api("give", body);
+        $("give").disabled = false;
+        if (result.status === 401) {
+          showGate("Sign in again", "Your account page's sign-in ended.");
+          return;
+        }
+        if (!result.ok) {
+          setStatus("give-status", result.data.error || "That did not work.", true);
+          return;
+        }
+        const as = result.data.color !== undefined ? ` Its colour in the game: ${result.data.color}.` : result.data.version ? ` Its version in the game: ${result.data.version}.` : "";
+        setStatus("give-status", `${chosen.name}: given. ${result.data.online ? "It is in your inventory in the game now." : "It is in your inventory next time you play."}${as}`);
+      });
+
+      api("colour").then(result => {
+        if (result.ok && result.data.palette) {
+          palette = result.data.palette.map(colour => `#${colour}`);
+          for (const slot of slots) {
+            const place = palette.indexOf(slot.picker.value);
+            setSlot(slot, slot.picker.value, slot.index !== null ? slot.index : place < 0 ? null : place);
+          }
+          showChoice();
+        }
+        else {
+          for (const slot of slots) {
+            slot.aj.disabled = true;
+          }
+        }
+      });
+      api("me").then(result => {
+        if (result.ok) {
+          $("who").textContent = `Items go to ${result.data.username}.`;
+        }
+      });
+      search();
+    </script>
+  </body>
+</html>

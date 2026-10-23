@@ -94,6 +94,8 @@
         transition: background 0.12s, border-color 0.12s, color 0.12s;
       }
       button:hover { background: var(--raised); border-color: #555; }
+      a.button { border: 1px solid var(--line); border-radius: 999px; padding: 7px 16px 8px; white-space: nowrap; text-decoration: none; }
+      a.button:hover { background: var(--raised); border-color: #555; }
       button:disabled { opacity: 0.45; cursor: default; }
       button:focus-visible, a:focus-visible, input[type="checkbox"]:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
       button.primary { font-weight: 700; color: #000; background: var(--text); border-color: var(--text); }
@@ -225,6 +227,7 @@
         <header>
           <img class="mark" src="/logo.png" alt="">
           <h1 id="title"></h1>
+          <a class="button" id="item-giver" href="/account/items">Item giver</a>
           <button id="sign-out" type="button">Sign out</button>
         </header>
 

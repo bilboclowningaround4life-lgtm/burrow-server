@@ -3,6 +3,7 @@ package loader
    import Enums.DenItemDef;
    import avatar.AvatarManager;
    import avatar.MannequinData;
+   import com.sbi.graphics.PaletteHelper;
    import com.sbi.loader.FileServerEvent;
    import den.DenItem;
    import den.DenStateItem;
@@ -13,6 +14,7 @@ package loader
    import flash.display.Sprite;
    import flash.events.Event;
    import flash.events.MouseEvent;
+   import flash.filters.ColorMatrixFilter;
    import pet.PetItem;
    import pet.PetManager;
    
@@ -467,7 +469,7 @@ package loader
                {
                   _version = getVersions()[0];
                }
-               _loader.content["setVersion"](param1);
+               _loader.content["setVersion"](artVersion(param1));
             }
             else if(_loader.content.hasOwnProperty("pet"))
             {
@@ -483,6 +485,50 @@ package loader
                }
             }
          }
+         applyTint();
+      }
+      
+      // a den item's version (the server's lib/admin.js): the art's own
+      // variant in the low 8 bits, and above them 1 + the number of a custom
+      // colour entry (PaletteHelper.customColors, [rgb, strength 1-100, 0,
+      // 0]) the whole item is tinted with. the art is only ever given its
+      // variant.
+      private static const CUSTOM_BASE:uint = 0xFD000000;
+      
+      private function artVersion(param1:int) : int
+      {
+         return param1 < 0 ? param1 : param1 & 0xFF;
+      }
+      
+      private function applyTint() : void
+      {
+         if(!_loader || !_loader.content || _loader.content.hasOwnProperty("pet"))
+         {
+            return;
+         }
+         var _loc1_:int = _version > 0 ? _version >> 8 & 0x7FFFFF : 0;
+         var _loc2_:Array = _loc1_ > 0 ? PaletteHelper.customColors[uint(CUSTOM_BASE + _loc1_ - 1)] : null;
+         _loader.filters = _loc2_ != null ? [new ColorMatrixFilter(tintMatrix(uint(_loc2_[0]),Math.min(100,Math.max(1,_loc2_[1])) / 100))] : [];
+      }
+      
+      // the item in shades of `param1`, `param2` of the way (0-1): each
+      // pixel's brightness, times the colour (made as bright as white would
+      // be, up to twice), mixed with the pixel as it was.
+      private static function tintMatrix(param1:uint, param2:Number) : Array
+      {
+         var _loc3_:Array = [(param1 >> 16 & 0xFF) / 255,(param1 >> 8 & 0xFF) / 255,(param1 & 0xFF) / 255];
+         var _loc4_:Number = 0.299 * _loc3_[0] + 0.587 * _loc3_[1] + 0.114 * _loc3_[2];
+         var _loc5_:Number = Math.min(2,1 / Math.max(0.001,_loc4_));
+         var _loc6_:Array = [];
+         var _loc7_:int = 0;
+         while(_loc7_ < 3)
+         {
+            var _loc8_:Number = _loc3_[_loc7_] * _loc5_ * param2;
+            _loc6_.push(0.299 * _loc8_ + (_loc7_ == 0 ? 1 - param2 : 0),0.587 * _loc8_ + (_loc7_ == 1 ? 1 - param2 : 0),0.114 * _loc8_ + (_loc7_ == 2 ? 1 - param2 : 0),0,0);
+            _loc7_++;
+         }
+         _loc6_.push(0,0,0,1,0);
+         return _loc6_;
       }
       
       public function rebuildMannequinView() : void
@@ -567,7 +613,7 @@ package loader
          }
          if(_loader.content.hasOwnProperty("setVersion") && _version >= 0)
          {
-            MovieClip(_loader.content).setVersion(_version);
+            MovieClip(_loader.content).setVersion(artVersion(_version));
          }
          else if(_loader.content.hasOwnProperty("pet"))
          {
@@ -582,6 +628,7 @@ package loader
                }
             }
          }
+         applyTint();
          if(MovieClip(_loader.content).isMoveToDisabled)
          {
             _loader.name = "moveToDisabled";

@@ -99,6 +99,54 @@ const run = async () => {
   // the start is used up with the sign-in
   assert.strictEqual((await mine("client-ticket", {token: annToken, nonce: browser.nonce})).status, 400);
 
+  // --- the item giver on the web (/account/items): signed in as on this page
+  assert.match(await (await fetch(`${BASE}/account/items`)).text(), /Item giver/);
+  // (an account of its own: the others' inventories are counted further down)
+  assert.strictEqual((await register("Cleo", 5)).status, 200);
+  const cleo = (await mine("login", {username: "Cleo", password: "KettlePass01"})).cookie;
+  assert.strictEqual((await mine("giver?q=top%20hat")).status, 401);
+  const hats = (await mine("giver?q=top%20hat&kind=clothing", undefined, cleo)).data;
+  const hat = hats.results.find(entry => entry.id === 21);
+  assert.ok(hat.presets.length > 1 && hat.presets[0].colours.every(colour => /^[0-9a-f]{6}$/.test(colour)));
+  const ownColour = await mine("give", {kind: "clothing", id: 21, colorIndex: 1}, cleo);
+  assert.deepStrictEqual([ownColour.status, ownColour.data.color], [200, hat.presets[1].id]);
+  // four colours of one's own: a custom colour (lib/colours.js), the same one for the same four
+  const hexColours = await mine("give", {kind: "clothing", id: 21, color: "#ff0000 #00ff00 #0000ff #ffffff"}, cleo);
+  assert.strictEqual(hexColours.status, 200);
+  assert.ok(hexColours.data.color >= 0xFD000000 && hexColours.data.color <= 0xFDFFFFFF);
+  assert.strictEqual((await mine("give", {kind: "clothing", id: 21, color: "#ff0000 #00ff00 #0000ff #ffffff"}, cleo)).data.color, hexColours.data.color);
+  // the page's colour boxes: the palette, a custom colour's four, the custom colour four make
+  assert.strictEqual((await mine("colour", undefined, cleo)).data.palette.length, 256);
+  assert.deepStrictEqual((await mine(`colour?id=${hexColours.data.color | 0}`, undefined, cleo)).data.colours, ["ff0000", "00ff00", "0000ff", "ffffff"]);
+  assert.strictEqual((await mine("colour?rgbs=ff0000,00ff00,0000ff,ffffff", undefined, cleo)).data.id, hexColours.data.color);
+  assert.strictEqual((await mine("colour?rgbs=123456,00ff00,0000ff,ffffff", undefined, cleo)).data.id, null);
+  assert.strictEqual((await mine("colour?id=4261412863", undefined, cleo)).status, 404);
+  // a colour as the game writes it, signed or not; a custom one only if it is made
+  assert.strictEqual((await mine("give", {kind: "clothing", id: 21, color: "-16777216"}, cleo)).data.color, 0xFF000000);
+  assert.strictEqual((await mine("give", {kind: "clothing", id: 21, color: "4261412863"}, cleo)).status, 400);
+  // a den item's variants (lib/den-variants.json) and a tint: 1 + the tint's colour entry above the variant's 8 bits
+  const chair = (await mine("giver?q=1&kind=den", undefined, cleo)).data.results.find(entry => entry.id === 1);
+  assert.deepStrictEqual([chair.variants, chair.variantColours.length, chair.tintable], [[0, 1, 2, 3, 4, 5, 6, 7], 8, true]);
+  assert.deepStrictEqual((await mine("give", {kind: "den", id: 1, version: 5}, cleo)).data.version, 5);
+  assert.strictEqual((await mine("give", {kind: "den", id: 1, version: 9}, cleo)).status, 400);
+  assert.strictEqual((await mine("give", {kind: "den", id: 1, tint: "red"}, cleo)).status, 400);
+  assert.strictEqual((await mine("give", {kind: "den", id: 1, tint: "#ff8800", tintStrength: 0}, cleo)).status, 400);
+  const tinted = await mine("give", {kind: "den", id: 1, version: 3, tint: "#ff8800", tintStrength: 60}, cleo);
+  assert.strictEqual(tinted.status, 200);
+  assert.strictEqual(tinted.data.version & 0xFF, 3);
+  assert.ok(tinted.data.version >> 8 >= 1);
+  // only from this server's own pages
+  assert.strictEqual((await mine("give", {kind: "den", id: 1}, cleo, {Origin: "http://evil.example"})).status, 403);
+  // its previews (lib/itempreview.js), the same for anyone: a clothing icon to colour, a den item's SWF
+  const icon = await (await fetch(`${BASE}/account/art/clothing/21`)).json();
+  assert.ok(icon.w > 0 && icon.h > 0 && Buffer.from(icon.b, "base64").length > 0);
+  const denArt = await fetch(`${BASE}/account/art/den/1`);
+  assert.strictEqual(denArt.headers.get("access-control-allow-origin"), "*");
+  assert.match(Buffer.from(await denArt.arrayBuffer()).subarray(0, 3).toString(), /^[CFZ]WS$/);
+  assert.strictEqual((await fetch(`${BASE}/account/art/den/999999`)).status, 404);
+  assert.match((await fetch(`${BASE}/account/item-preview`)).headers.get("content-security-policy"), /sandbox allow-scripts$/);
+  assert.match(Buffer.from(await (await fetch(`${BASE}/account/item-preview.swf`)).arrayBuffer()).subarray(0, 3).toString(), /^[CFZ]WS$/);
+
   // --- parts of the game switched off
   const {client: a, roomId} = await arrive("Ann", "KettlePass01");
   const {client: b} = await arrive("Ben", "KettlePass01");
