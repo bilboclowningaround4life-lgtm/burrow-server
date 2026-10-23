@@ -539,7 +539,14 @@ package
             }
             else
             {
-               _toolsInstance.showItemFinder(true);
+               // the item giver is the web one now (the account page's
+               // /account/items, signed in as there), opened in the browser:
+               // the one in the game is retired. it shared its colour box
+               // with the Item Maker, whose colours turned up in it.
+               if(ExternalInterface.available)
+               {
+                  ExternalInterface.call("ajOpenPage",gMainFrame.clientInfo.websiteURL + "account/items");
+               }
             }
          }
          catch(e:Error)
@@ -3513,7 +3520,6 @@ package
 
       private var _emojiCaret:int = -1;
 
-      private var _emojiTimer:Timer;
 
       // the characters of code points in hex ("1f468-200d-1f469")
       public static function charsOfHex(param1:String) : String
@@ -3555,7 +3561,8 @@ package
 
       // a line about to be sent: each ":name:" of an emoji above becomes it,
       // but not the game's own emote codes (":happy:", ":joy:"), which the
-      // bubble shows as the game's.
+      // bubble shows as the game's, nor one after a "\" ("\:fire:"), which
+      // the bubble shows as typed (ChatBalloon.inlineEmotes).
       public static function emojiShortcodes(param1:String) : String
       {
          if(param1.indexOf(":") == -1)
@@ -3563,13 +3570,13 @@ package
             return param1;
          }
          emojiTable();
-         return param1.replace(/:([a-z0-9_]{1,30}):/g,function(param1:String, param2:String, ... rest):String
+         return param1.replace(/(\\?):([a-z0-9_]{1,30}):/g,function(param1:String, param2:String, param3:String, ... rest):String
          {
-            if(EmoticonUtility.doesStringMatchAnEmote(param1) || _emojiByName[param2] == null)
+            if(param2 != "" || EmoticonUtility.doesStringMatchAnEmote(":" + param3 + ":") || _emojiByName[param3] == null)
             {
                return param1;
             }
-            return _emojiByName[param2];
+            return _emojiByName[param3];
          });
       }
 
@@ -4115,9 +4122,9 @@ package
 
       private function startEmojiButton() : void
       {
-         _emojiTimer = new Timer(500);
-         _emojiTimer.addEventListener("timer",placeEmojiButton);
-         _emojiTimer.start();
+         // every frame: on a timer it went a moment after the HUD did, when
+         // a window opened over it
+         gMainFrame.stage.addEventListener("enterFrame",placeEmojiButton,false,0,true);
          gMainFrame.stage.addEventListener("mouseDown",onEmojiStageDown,false,0,true);
       }
 

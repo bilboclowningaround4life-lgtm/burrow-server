@@ -73,8 +73,9 @@ package gui
       private var _emoteBGOffsetFunc:Function;
       
       // emotes drawn inside a line of chat, small, where they were typed: an
-      // emote's code standing as a word of its own ("hi :) there", ":fever:"),
-      // or anywhere after a "\" ("yay\:)"). and emoji (typed with Windows'
+      // emote's code standing as a word of its own ("hi :) there", ":fever:").
+      // a "\" before one keeps it as typed ("\:)" shows ":)"), as it does a
+      // ":name:" of an emoji (AJClient.emojiShortcodes). and emoji (typed with Windows'
       // emoji panel, say), which the game's font has none of: each is drawn
       // as a picture of it, from the server (/emoji/<code points>.png,
       // Twemoji's). each is {at, clip}: where its gap starts in the text shown.
@@ -82,6 +83,11 @@ package gui
       // artwork to this measured slot with a one-pixel gutter on each side,
       // so consecutive emoji neither overlap nor touch surrounding text.
       private static const INLINE_GAP:String = "    ";
+
+      // after each gap: a gap ending the text was trailing spaces, which a
+      // centred line leaves out, so the text sat off centre and its last
+      // emoji past it. this is no space, and has no width.
+      private static const INLINE_END:String = "\u200B";
       
       private static const LONGEST_EMOTE_CODE:int = 16;
       
@@ -579,7 +585,7 @@ package gui
                   "at":_loc2_.length,
                   "clip":emojiClip(param1.substr(_loc3_,_loc8_))
                });
-               _loc2_ += INLINE_GAP;
+               _loc2_ += INLINE_GAP + INLINE_END;
                _loc3_ += _loc8_;
                continue;
             }
@@ -594,14 +600,26 @@ package gui
                      "at":_loc2_.length,
                      "clip":emojiClipNamed(_loc9_[1])
                   });
-                  _loc2_ += INLINE_GAP;
+                  _loc2_ += INLINE_GAP + INLINE_END;
                   _loc3_ += String(_loc9_[0]).length;
                   continue;
                }
             }
             if(param1.charAt(_loc3_) == "\\")
             {
+               // "\" and an emote's code, or ":name:": that, as typed
                _loc5_ = emoteCodeAt(param1,_loc3_ + 1,false);
+               var _loc10_:Array = /^:[a-z0-9_]{1,30}:/.exec(param1.substr(_loc3_ + 1,32));
+               if(_loc5_ == null && _loc10_ != null)
+               {
+                  _loc5_ = _loc10_[0];
+               }
+               if(_loc5_ != null)
+               {
+                  _loc2_ += _loc5_;
+                  _loc3_ += 1 + _loc5_.length;
+                  continue;
+               }
             }
             else if(_loc3_ == 0 || param1.charAt(_loc3_ - 1) == " ")
             {
@@ -616,8 +634,8 @@ package gui
                   "at":_loc2_.length,
                   "clip":_loc7_
                });
-               _loc2_ += INLINE_GAP;
-               _loc3_ += (param1.charAt(_loc3_) == "\\" ? 1 : 0) + _loc5_.length;
+               _loc2_ += INLINE_GAP + INLINE_END;
+               _loc3_ += _loc5_.length;
             }
             else
             {

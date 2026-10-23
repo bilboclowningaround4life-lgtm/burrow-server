@@ -15,6 +15,7 @@ package gui
    import flash.text.StyleSheet;
    import flash.text.TextField;
    import flash.text.TextFormat;
+   import flash.utils.getTimer;
    import flash.ui.Mouse;
    import gui.itemWindows.ItemWindowTextNode;
    import localization.LocalizationManager;
@@ -49,6 +50,13 @@ package gui
       private var _repeatChatWindows:WindowGenerator;
       
       private var _chatRepeatArray:Array;
+      
+      // a repeat list line (emoji as names) -> {line: as it was said, with
+      // its emoji, at: getTimer() then}. the names were sent instead, and the
+      // server says nothing to a line said again within REPEAT_MS (lib/chatspam.js)
+      private var _chatRepeatSaid:Object = {};
+      
+      private static const REPEAT_MS:int = 20000;
       
       private var _hasSetupChatRepeatBtn:Boolean;
       
@@ -288,6 +296,7 @@ package gui
       
       public function addMessage(param1:String, param2:String, param3:String, param4:String) : void
       {
+         var said:String = param4;
          // emoji as their names here: this list has no pictures (AJClient.emojiAsNames)
          param4 = AJClient.emojiAsNames(param4);
          var _loc5_:Boolean = false;
@@ -298,6 +307,10 @@ package gui
             addLine("<a href=\"event:" + plain(param2) + "\">" + plain(Utility.isSettingOn(MySettings.SETTINGS_USERNAME_BADGE) ? param3 : param1) + ": " + "</a>",param4,"\n");
             if(_chatRepeatWindow && AvatarManager.playerAvatar && param2.toLowerCase() == AvatarManager.playerAvatar.userName.toLowerCase())
             {
+               _chatRepeatSaid[param4] = {
+                  "line":said,
+                  "at":getTimer()
+               };
                _loc7_ = 0;
                while(_loc7_ < _chatRepeatArray.length)
                {
@@ -991,9 +1004,10 @@ package gui
       
       private function onRepeatChatSelected(param1:MouseEvent) : void
       {
-         if(!AvatarManager.playerAvatarWorldView.isSameMessage(param1.currentTarget.text))
+         var _loc2_:Object = _chatRepeatSaid[param1.currentTarget.text];
+         if(!AvatarManager.playerAvatarWorldView.isSameMessage(param1.currentTarget.text) && !(_loc2_ && getTimer() - _loc2_.at < REPEAT_MS))
          {
-            sendMsgCallback(null,param1.currentTarget.text);
+            sendMsgCallback(null,_loc2_ ? _loc2_.line : param1.currentTarget.text);
             SBTracker.trackPageview("/game/play/popup/repeatChat/#repeat",-1,1);
          }
          else

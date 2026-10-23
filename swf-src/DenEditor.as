@@ -235,14 +235,8 @@ package gui
       
       public function updateSwitchRecycleBtnVisibility() : void
       {
-         if(!_denEditor.switchDenBtn.visible)
-         {
-            if(gMainFrame.userInfo.numLogins >= 2 || gMainFrame.userInfo.userVarCache.getUserVarValueById(3) > 1)
-            {
-               _denEditor.switchDenBtn.visible = true;
-               _denEditor.recycleBtn.visible = true;
-            }
-         }
+         _denEditor.switchDenBtn.visible = true;
+         _denEditor.recycleBtn.visible = true;
       }
       
       public function clearItemWindows() : void
@@ -433,11 +427,11 @@ package gui
          {
             _denEditor.petBtnDn.visible = false;
          }
-         if(gMainFrame.userInfo.numLogins < 2 && gMainFrame.userInfo.userVarCache.getUserVarValueById(3) <= 1)
-         {
-            _denEditor.switchDenBtn.visible = false;
-            _denEditor.recycleBtn.visible = false;
-         }
+         // the switch den and recycle buttons are not kept from a new
+         // player any more: the game hid them before a second login (or a
+         // den tutorial var), and players found them gone
+         _denEditor.switchDenBtn.visible = true;
+         _denEditor.recycleBtn.visible = true;
          _denEditor.denAudioPopup.visible = false;
          _denEditor.itemBlock.glowCont.glow.visible = false;
          _denEditor.lockBtn.denLock.initToolTip(_guiLayer,LocalizationManager.translateIdOnly(14639),900 * 0.5,105);
@@ -690,7 +684,8 @@ package gui
          {
             _denEditor.itemBlock.itemBlock.addChild(_itemWindow);
          }
-         if(_numItems <= 10 + 1)
+         // ten to a page: with eleven the last could not be scrolled to
+         if(_numItems <= 10)
          {
             _denEditor.lArrowBtn.activateGrayState(true);
             _denEditor.rArrowBtn.activateGrayState(true);

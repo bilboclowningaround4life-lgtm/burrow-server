@@ -387,6 +387,11 @@ module.exports = {
   chatWindowMs: 3000, // ... in this long
   roomActionsPerWindow: 6, // emotes, actions and the like one player may send a room ...
   roomActionWindowMs: 3000, // ... in this long (the rest reach nobody)
+  // eco den items (lib/eco.js): credits an hour for each point of eco power
+  // placed in a den, and what an account is given the first time it looks
+  // (an Eco Solar Panel's price)
+  ecoCreditsPerPointHour: 1,
+  ecoStartCredits: 1500,
   maxBytesPerTenSeconds: 512 * 1024, // per game socket; saving a full den is about 40 KB
   // custom colours (lib/colours.js). every one ever made is sent to every
   // player at every login and is never taken out again, so there is an end

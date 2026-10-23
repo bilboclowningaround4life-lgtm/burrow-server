@@ -391,11 +391,18 @@ package den
                }
                _loc26_ = int(param1[_loc23_++]);
                _loc18_.init(_loc28_,_loc31_,_loc32_,_loc24_,0,null,_loc14_,_loc33_,"",_loc17_,_loc30_,_loc4_,_loc26_);
-               _loc6_.setDenItem(_loc21_,_loc18_);
+               // pushed, not set at its place: one skipped left a hole, and
+               // the inventory's windows scrolled over an empty one
+               _loc6_.pushDenItem(_loc18_);
                if(_loc18_.minigameDefId > 0 && !MinigameManager.minigameInfoCache.getMinigameInfo(_loc18_.minigameDefId))
                {
                   _loc20_.push(_loc18_.minigameDefId);
                }
+            }
+            else
+            {
+               // its last field (the den shop's), read past as above
+               _loc23_++;
             }
             _loc21_++;
          }
@@ -846,6 +853,11 @@ package den
             _loc19_ = getDenItemDef(_loc27_);
             if(!_loc19_)
             {
+               // the rest of its fields, read past: left there, every item
+               // after it was read from the wrong place (lib/dens.js
+               // sendDenState: placed, x, y, version, flip, link, image,
+               // creator id, creator uuid, eco state)
+               _loc20_ += 10;
                _loc9_.setDenStateItem(_loc21_,new DenStateItem(0,_loc38_,0,0,0,0,0,0,0,0,0,0,0,0,0,"",0,"",0,0,"","",-1,"",false,null,0,0,null,null,2));
             }
             else

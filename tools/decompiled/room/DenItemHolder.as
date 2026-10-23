@@ -807,6 +807,7 @@ package room
       
       public function shouldStopMovement(param1:Point) : Boolean
       {
+         var _loc6_:Loader = null;
          var _loc5_:DenStateItem = null;
          var _loc3_:MovieClip = null;
          var _loc4_:int = 0;
@@ -819,9 +820,13 @@ package room
                _loc5_ = _currItems.getDenStateItem(_loc4_);
                if(!isTheme(_loc5_.sortCatId) && _loc5_.sortCatId != 4)
                {
-                  if(_loc5_.denItemHelper.displayObject.numChildren > 0)
+                  // a custom den item's own picture is a Bitmap here, no
+                  // Loader: the cast threw at every click in the den, and
+                  // nobody there could walk
+                  _loc6_ = _loc5_.denItemHelper && _loc5_.denItemHelper.displayObject.numChildren > 0 ? _loc5_.denItemHelper.displayObject.getChildAt(0) as Loader : null;
+                  _loc3_ = _loc6_ != null ? _loc6_.content as MovieClip : null;
+                  if(_loc3_ != null)
                   {
-                     _loc3_ = Loader(_loc5_.denItemHelper.displayObject.getChildAt(0)).content as MovieClip;
                      if(_loc3_.parent.name == "moveToDisabled")
                      {
                         if(_loc3_.hitTestPoint(param1.x,param1.y,true))
@@ -1755,7 +1760,7 @@ package room
             }
             if(_loc6_.parent)
             {
-               _loc5_ = Loader(_loc6_.getChildAt(0));
+               _loc5_ = _loc6_.numChildren > 0 ? _loc6_.getChildAt(0) as Loader : null;
                if(_loc5_)
                {
                   _loc3_ = MovieClip(_loc5_.content);

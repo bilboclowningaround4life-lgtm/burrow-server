@@ -133,6 +133,11 @@ package buddy
       
       private var _joinLabel:Sprite;
       
+      // the animal's box as the card's art has it, measured before an animal
+      // is put in it: measured with one in, a tall animal (or the one still
+      // there from the card's last opening) put the label up on the name
+      private var _charBoxRect:Rectangle;
+      
       private var _badgeRow:Sprite;
       
       private var _discordIcon:Sprite;
@@ -829,6 +834,7 @@ package buddy
          _bioMediaHelper = new MediaHelper();
          _bioMediaHelper.init(BIO_TAB_MEDIA_ID,onBioTabLoaded);
          charBox = _buddyCardMC.charBox;
+         _charBoxRect = charBox.getBounds(_buddyCardMC);
          userNameTxt = _buddyCardMC.userName_txt;
          avatarNameTxt = _buddyCardMC.avatarNameTxt;
          shamanTag = _buddyCardMC.shamanTag;
@@ -993,7 +999,7 @@ package buddy
          }
          _joinLabel = AJClient.makePill(_loc3_,9067051,6044183,false,11);
          _joinLabel.mouseEnabled = false;
-         _loc2_ = charBox.getBounds(_buddyCardMC);
+         _loc2_ = _charBoxRect != null ? _charBoxRect : charBox.getBounds(_buddyCardMC);
          _joinLabel.x = int(_loc2_.right - _joinLabel.width - 8);
          _joinLabel.y = int(_loc2_.top + 8);
          _buddyCardMC.addChild(_joinLabel);
