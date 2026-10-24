@@ -135,11 +135,6 @@ package
             AJClient.onMentions(param1.obj);
             return;
          }
-         if(param1.obj[0] == "xtr")
-         {
-            AJClient.onTrading(param1.obj);
-            return;
-         }
          if(param1.obj[0] == "xty")
          {
             AJClient.onTyping(param1.obj);

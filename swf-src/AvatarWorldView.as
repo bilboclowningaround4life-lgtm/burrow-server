@@ -241,8 +241,6 @@ package avatar
 
       private var _typing:Sprite;
 
-      private var _tradingSign:Sprite;
-
       private var _typingDots:Array;
 
       private var _typingTimer:Timer;
@@ -683,8 +681,6 @@ package avatar
          }
          _typing = null;
          _typingDots = null;
-         setTrading(false);
-         _tradingSign = null;
          removeChild(_namebar);
          if(_secondaryEmot && _chatLayer.contains(_secondaryEmot))
          {
@@ -1157,49 +1153,6 @@ package avatar
          {
             _typingTimer.start();
          }
-      }
-
-      // trading (lib/world.js showTrading): a round sign with two arrows by
-      // the head, for as long as the trade goes on. a child of the animal's
-      // own, so it goes where the animal goes.
-      public function setTrading(param1:Boolean) : void
-      {
-         var _loc2_:Point = null;
-         if(!param1)
-         {
-            if(_tradingSign && _tradingSign.parent)
-            {
-               _tradingSign.parent.removeChild(_tradingSign);
-            }
-            return;
-         }
-         if(_tradingSign == null)
-         {
-            _tradingSign = new Sprite();
-            _tradingSign.mouseEnabled = false;
-            _tradingSign.mouseChildren = false;
-            _tradingSign.graphics.lineStyle(2,0x7F6744);
-            _tradingSign.graphics.beginFill(0xFFF2C4);
-            _tradingSign.graphics.drawCircle(0,0,12);
-            _tradingSign.graphics.endFill();
-            // an arrow to the right over one to the left
-            _tradingSign.graphics.lineStyle(2,0x4FA52F,1,false,"normal","round","round");
-            _tradingSign.graphics.moveTo(-6,-3);
-            _tradingSign.graphics.lineTo(6,-3);
-            _tradingSign.graphics.moveTo(3,-6);
-            _tradingSign.graphics.lineTo(6,-3);
-            _tradingSign.graphics.lineTo(3,0);
-            _tradingSign.graphics.lineStyle(2,0xD4482A,1,false,"normal","round","round");
-            _tradingSign.graphics.moveTo(6,4);
-            _tradingSign.graphics.lineTo(-6,4);
-            _tradingSign.graphics.moveTo(-3,1);
-            _tradingSign.graphics.lineTo(-6,4);
-            _tradingSign.graphics.lineTo(-3,7);
-         }
-         _loc2_ = _avatar ? AvatarUtility.getAvatarChatOffset(_avatar.avTypeId) : new Point(0,-80);
-         _tradingSign.x = _loc2_.x + 26;
-         _tradingSign.y = _loc2_.y + 16;
-         addChild(_tradingSign);
       }
 
       private function hideTyping() : void

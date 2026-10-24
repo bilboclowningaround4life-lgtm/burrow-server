@@ -224,6 +224,17 @@ package gui
       private var _colorTableColor2:ColorTable;
       
       private var _colorTablePatterns:ColorTable;
+
+      // a special animal's pattern has four colours, a byte each of its
+      // colour number (its presets set all four; LayerBitmap draws them and
+      // the blends between them): the tables of the second, third and
+      // fourth, each shown in place of the first's while its number beside
+      // them is chosen
+      private var _patternColorTables:Array;
+
+      private var _patternColorBtns:Array;
+
+      private var _patternColorSlot:int;
       
       private var _colorTableEyes:ColorTable;
       
@@ -434,6 +445,15 @@ package gui
          _colorTableColor1.destroy();
          _colorTableColor2.destroy();
          _colorTablePatterns.destroy();
+         for each(var _loc9_:ColorTable in _patternColorTables)
+         {
+            if(_loc9_ != _colorTablePatterns)
+            {
+               _loc9_.destroy();
+            }
+         }
+         _patternColorTables = null;
+         _patternColorBtns = null;
          _colorTableEyes.destroy();
          _namebarBadgeMediaIds = null;
          _nameBars = null;
@@ -622,6 +642,17 @@ package gui
          _colorTableColor2.init(1,240,150,10,5,_gamePalette,_avatarPalette2,_loc10_,onColorChanged,102);
          _colorTablePatterns = new ColorTable();
          _colorTablePatterns.init(3,240,150,10,5,_gamePalette,_avatarPalette1,_loc8_,onColorChanged,102);
+         _patternColorTables = [_colorTablePatterns];
+         var _loc13_:int = 1;
+         while(_loc13_ < 4)
+         {
+            _patternColorTables[_loc13_] = new ColorTable();
+            ColorTable(_patternColorTables[_loc13_]).init(3 + _loc13_,240,150,10,5,_gamePalette,_avatarPalette1,_loc2_[1] >> 24 - _loc13_ * 8 & 0xFF,onColorChanged,102);
+            ColorTable(_patternColorTables[_loc13_]).x = 21;
+            ColorTable(_patternColorTables[_loc13_]).y = 176;
+            _loc13_++;
+         }
+         _patternColorSlot = 0;
          _colorTableEyes = new ColorTable();
          _colorTableEyes.init(2,240,150,10,5,_gamePalette,_avatarPalette1,_loc5_,onColorChanged,102);
          _colorTableColor1.x = 21;
@@ -916,9 +947,16 @@ package gui
                _loc9_ = _loc6_ >> 8 & 0xFF;
                _loc3_ = _loc6_ & 0xFF;
                _loc6_ = uint(_loc5_ << 24 | _loc7_ << 16 | _loc9_ << 8 | _loc3_);
+               break;
+            case 4:
+            case 5:
+            case 6:
+               // a special animal's pattern's second, third or fourth colour
+               _loc5_ = 24 - (param1 - 3) * 8;
+               _loc6_ = uint(_loc6_ & ~(0xFF << _loc5_) | (param2 & 0xFF) << _loc5_);
          }
          _avatarEditorView.colors = [_loc4_,_loc6_,_loc8_];
-         if(param1 == 2 || param1 == 3)
+         if(param1 >= 2)
          {
             colorCurrEyePattIcon();
          }
@@ -1263,6 +1301,7 @@ package gui
                avEditor.colorTableBlock.patternsAndEyes.removeChild(_colorTableEyes);
             }
             avEditor.colorTableBlock.patternsAndEyes.addChild(_colorTablePatterns);
+            showPatternColorChoice(_worldAvatar.customAvId != -1);
             if(_patterns.length > 0)
             {
                if(_patterns.length <= 1 && _worldAvatar.customAvId == -1)
@@ -1293,6 +1332,7 @@ package gui
             {
                avEditor.colorTableBlock.patternsAndEyes.removeChild(_colorTablePatterns);
             }
+            showPatternColorChoice(false);
             if(_customAvtIcon && avEditor.colorTableBlock.patternsAndEyes.specialAvtIconCont.contains(_customAvtIcon))
             {
                avEditor.colorTableBlock.patternsAndEyes.specialAvtIconCont.removeChild(_customAvtIcon);
@@ -1321,6 +1361,77 @@ package gui
          colorCurrEyePattIcon();
          avEditor.colorTableBlock.patternsAndEyes.visible = true;
          avEditor.colorTableBlock.colors.visible = false;
+      }
+      
+      // the "1" to "4" left of the pattern's colour table, choosing which of
+      // its four colours it sets, with that colour's table (param1), or
+      // neither, and the first's table back
+      private function showPatternColorChoice(param1:Boolean) : void
+      {
+         var _loc2_:MovieClip = avEditor.colorTableBlock.patternsAndEyes;
+         var _loc3_:int = 0;
+         var _loc4_:Sprite = null;
+         if(_patternColorBtns == null)
+         {
+            _patternColorBtns = [];
+            while(_loc3_ < 4)
+            {
+               _loc4_ = createSmallButton(String(_loc3_ + 1));
+               _loc4_.name = "patternColor" + _loc3_;
+               _loc4_.x = 2;
+               _loc4_.y = 176 + _loc3_ * 20;
+               _loc4_.addEventListener("mouseDown",onPatternColorBtn,false,0,true);
+               _patternColorBtns.push(_loc4_);
+               _loc3_++;
+            }
+         }
+         _loc3_ = 0;
+         while(_loc3_ < _patternColorBtns.length)
+         {
+            _loc4_ = _patternColorBtns[_loc3_];
+            if(param1)
+            {
+               _loc2_.addChild(_loc4_);
+               _loc4_.alpha = _loc3_ == _patternColorSlot ? 1 : 0.45;
+            }
+            else if(_loc4_.parent)
+            {
+               _loc4_.parent.removeChild(_loc4_);
+            }
+            _loc3_++;
+         }
+         // the first's table is added and taken away with the tab
+         _loc3_ = 1;
+         while(_loc3_ < _patternColorTables.length)
+         {
+            if(_loc2_.contains(_patternColorTables[_loc3_]))
+            {
+               _loc2_.removeChild(_patternColorTables[_loc3_]);
+            }
+            _loc3_++;
+         }
+         if(param1)
+         {
+            if(_patternColorSlot == 0)
+            {
+               _loc2_.addChild(_colorTablePatterns);
+            }
+            else
+            {
+               if(_loc2_.contains(_colorTablePatterns))
+               {
+                  _loc2_.removeChild(_colorTablePatterns);
+               }
+               _loc2_.addChild(_patternColorTables[_patternColorSlot]);
+            }
+         }
+      }
+
+      private function onPatternColorBtn(param1:MouseEvent) : void
+      {
+         param1.stopPropagation();
+         _patternColorSlot = int(Sprite(param1.currentTarget).name.charAt(12));
+         showPatternColorChoice(true);
       }
       
       private function onCustomIconLoaded(param1:MovieClip) : void

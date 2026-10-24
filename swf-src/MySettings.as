@@ -160,10 +160,9 @@ package gui
          }
          var _loc4_:Array = [{
             "type":TOGGLE_TYPE_JOIN,
-            // the web item giver (AJClient.openTool), in the browser
             "frame":"itemFinder",
             "iconFrame":"redeemCode",
-            "labelLabel":"Item Giver (web)",
+            "labelLabel":"Item Giver",
             "btnLabel":"Open"
          },{
             // a player's own items (AJClient's Item Maker)

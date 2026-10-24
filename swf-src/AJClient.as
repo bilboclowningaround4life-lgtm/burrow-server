@@ -539,14 +539,7 @@ package
             }
             else
             {
-               // the item giver is the web one now (the account page's
-               // /account/items, signed in as there), opened in the browser:
-               // the one in the game is retired. it shared its colour box
-               // with the Item Maker, whose colours turned up in it.
-               if(ExternalInterface.available)
-               {
-                  ExternalInterface.call("ajOpenPage",gMainFrame.clientInfo.websiteURL + "account/items");
-               }
+               _toolsInstance.showItemFinder(true);
             }
          }
          catch(e:Error)
@@ -1537,17 +1530,6 @@ package
          if(_loc2_ != null && int(param1[2]) != AvatarManager.playerSfsUserId)
          {
             _loc2_.setTyping(String(param1[3]) == "1");
-         }
-      }
-
-      // "xtr": [.., .., sfsId, 1 | 0]: another player trading, or not
-      // (lib/world.js showTrading).
-      public static function onTrading(param1:Object) : void
-      {
-         var _loc2_:AvatarWorldView = AvatarManager.avatarViewList != null ? AvatarManager.avatarViewList[int(param1[2])] as AvatarWorldView : null;
-         if(_loc2_ != null)
-         {
-            _loc2_.setTrading(String(param1[3]) == "1");
          }
       }
 
@@ -4573,7 +4555,7 @@ package
             _loc3_.currTxt.text = (_loc5_ ? "> " : "") + makerShort(String(_loc4_.name || "(no name)"),24) + (_makerMode == "mine" ? (_loc4_.waiting == "item" ? "  (waiting)" : _loc4_.waiting == "picture" ? "  (picture waiting)" : _loc4_.art ? (_loc4_.kind == "clothing" ? (_loc4_.artMode == "texture" ? "  (texture)" : "  (sticker)") : "  (picture)") : "") : "   #" + _loc4_.id);
             _loc3_.addEventListener("mouseDown",onMakerButton);
             _makerRowsSprite.addChild(_loc3_);
-            _makerRowsSprite.addChild(finderPreview(_loc4_,_loc2_,186,_loc3_.y));
+            _makerRowsSprite.addChild(finderPreview(_loc4_,_loc2_,186,_loc3_.y,false));
             _loc2_++;
          }
          if(_makerMode == "mine" && _loc1_.length == 0)
@@ -5240,6 +5222,17 @@ package
          return _loc4_;
       }
       
+      // the item's own colour that a row is on (param1.colorIndex), or 0
+      private function itemOwnColour(param1:Object) : uint
+      {
+         var _loc2_:Object = ItemXtCommManager.getItemDef(int(param1.id));
+         if(_loc2_ == null || _loc2_.colors == null || _loc2_.colors.length == 0)
+         {
+            return 0;
+         }
+         return uint(_loc2_.colors[Math.min(int(param1.colorIndex),_loc2_.colors.length - 1)]);
+      }
+
       // the colour a clothing row is drawn in: the box's colour id or hex
       // colour, else the item's own colour that the row is on
       private function finderPreviewColour(param1:Object) : uint
@@ -5268,16 +5261,15 @@ package
             // a negative id is the same colour written signed
             return uint(Number(_loc2_));
          }
-         _loc4_ = ItemXtCommManager.getItemDef(int(param1.id));
-         if(_loc4_ == null || _loc4_.colors == null || _loc4_.colors.length == 0)
-         {
-            return 0;
-         }
-         return uint(_loc4_.colors[Math.min(int(param1.colorIndex),_loc4_.colors.length - 1)]);
+         return itemOwnColour(param1);
       }
       
       // the row's item as the game draws it in a shop, in a box at the row's end
-      private function finderPreview(param1:Object, param2:int, param3:Number, param4:Number) : Sprite
+      // param5: a row of the item giver's, drawn in its colour box's colour
+      // and recoloured as that changes. the Item Maker's rows are drawn by
+      // this too, in the item's own colour: the giver's box coloured them,
+      // and its colour turned up in the maker.
+      private function finderPreview(param1:Object, param2:int, param3:Number, param4:Number, param5:Boolean = true) : Sprite
       {
          var _loc5_:Sprite = new Sprite();
          var _loc6_:Sprite = new Sprite();
@@ -5317,7 +5309,7 @@ package
                   return _loc5_;
                }
                _loc8_ = new Item();
-               Item(_loc8_).init(int(param1.id),0,finderPreviewColour(param1),null,true);
+               Item(_loc8_).init(int(param1.id),0,param5 ? finderPreviewColour(param1) : itemOwnColour(param1),null,true);
             }
             // fitted to the box once drawn, which may be before the icon is
             // handed back when its picture was loaded already
@@ -5343,7 +5335,10 @@ package
                   _loc8_.imageLoadedCallback();
                }
             }
-            _finderIcons[param2] = _loc8_;
+            if(param5)
+            {
+               _finderIcons[param2] = _loc8_;
+            }
          }
          catch(e:Error)
          {

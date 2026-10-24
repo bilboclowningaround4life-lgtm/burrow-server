@@ -174,7 +174,7 @@ module.exports = {
   // 62: "Custom pictures" in the settings menu, to hide players' item pictures.
   // 83: den items tinted (the tint in their version, DenItemHelper.applyTint).
   // 84: fixes from the owner's list of bugs (bugs.txt, 2026-10-23).
-  buildVersion: env.AJ_BUILD_VERSION || "87",
+  buildVersion: env.AJ_BUILD_VERSION || "92",
   // what the official CDN is asked for; not ours to change.
   upstreamBuildVersion: "3",
 
@@ -207,7 +207,7 @@ module.exports = {
   // are written into both pages. the emails and the host's country are
   // placeholders until set; the operator is, at the owner's word, said to
   // be in the EU without a name or a country.
-  termsVersion: "2026-10-21",
+  termsVersion: "2026-10-24",
   legalEmail: env.AJ_LEGAL_EMAIL || "legal@burrow.moe",
   adminEmail: env.AJ_ADMIN_EMAIL || "admin@burrow.moe",
   operator: env.AJ_OPERATOR || "an individual based in the European Union",
