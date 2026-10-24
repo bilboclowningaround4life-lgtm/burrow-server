@@ -174,7 +174,7 @@ module.exports = {
   // 62: "Custom pictures" in the settings menu, to hide players' item pictures.
   // 83: den items tinted (the tint in their version, DenItemHelper.applyTint).
   // 84: fixes from the owner's list of bugs (bugs.txt, 2026-10-23).
-  buildVersion: env.AJ_BUILD_VERSION || "86",
+  buildVersion: env.AJ_BUILD_VERSION || "87",
   // what the official CDN is asked for; not ours to change.
   upstreamBuildVersion: "3",
 
